@@ -46,16 +46,21 @@ export const api = {
   changePassword: (currentPassword, newPassword) =>
     request('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
   listAdmins: () => request('/admins'),
+  submitContact: (payload) => request('/contact', { method: 'POST', body: payload }),
   listAdminsBasic: () => request('/admins/basic'),
   getAdminBatchAccess: (adminId) => request(`/admins/${adminId}/batches`),
   createAdmin: (payload) => request('/admins', { method: 'POST', body: payload }),
   updateAdmin: (id, name) => request(`/admins/${id}`, { method: 'PUT', body: { name } }),
   deleteAdmin: (id) => request(`/admins/${id}`, { method: 'DELETE' }),
+  toggleAdminEmailNotifications: (id, enabled) =>
+    request(`/admins/${id}/notifications`, { method: 'PATCH', body: { enabled } }),
 
   listBatches: () => request('/batches'),
   createBatch: (name, collaboratorIds = []) =>
     request('/batches', { method: 'POST', body: { name, collaboratorIds } }),
   deleteBatch: (id) => request(`/batches/${id}`, { method: 'DELETE' }),
+  updateBatchSettings: (id, qrValidityMinutes) =>
+    request(`/batches/${id}/settings`, { method: 'PATCH', body: { qrValidityMinutes } }),
   assignAdminToBatch: (batchId, adminId) =>
     request(`/batches/${batchId}/assign-admin`, { method: 'POST', body: { adminId } }),
   revokeAdminFromBatch: (batchId, adminId) =>

@@ -13,6 +13,7 @@ CREATE TABLE batches (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   created_by INTEGER REFERENCES admins(id) ON DELETE SET NULL,
+  qr_validity_minutes INTEGER NOT NULL DEFAULT 5,
   created_at TIMESTAMP DEFAULT NOW()
 );
 

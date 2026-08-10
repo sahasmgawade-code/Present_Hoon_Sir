@@ -35,6 +35,11 @@ export default function GenerateQr() {
   const [generateError, setGenerateError] = useState('');
   const [downloaded, setDownloaded] = useState(false);
 
+  const [validityMinutes, setValidityMinutes] = useState('');
+  const [savingValidity, setSavingValidity] = useState(false);
+  const [validityError, setValidityError] = useState('');
+  const [validitySaved, setValiditySaved] = useState(false);
+
   const secondsLeft = useCountdown(session?.expiresAt);
   const expired = session && secondsLeft === 0;
   const pollRef = useRef(null);
@@ -108,6 +113,35 @@ export default function GenerateQr() {
 
   const selectedBatch = batches.find((b) => b.id === batchId);
 
+  // keep the editable field in sync whenever the selected batch changes
+  useEffect(() => {
+    if (selectedBatch) {
+      setValidityMinutes(String(selectedBatch.qr_validity_minutes ?? 5));
+      setValidityError('');
+      setValiditySaved(false);
+    }
+  }, [selectedBatch?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSaveValidity() {
+    const minutes = Number(validityMinutes);
+    if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) {
+      setValidityError('Enter a whole number between 1 and 180.');
+      return;
+    }
+    setValidityError('');
+    setSavingValidity(true);
+    setValiditySaved(false);
+    try {
+      const data = await api.updateBatchSettings(batchId, minutes);
+      setBatches((prev) => prev.map((b) => (b.id === batchId ? data.batch : b)));
+      setValiditySaved(true);
+    } catch (err) {
+      setValidityError(err.message || 'Could not save.');
+    } finally {
+      setSavingValidity(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -132,10 +166,35 @@ export default function GenerateQr() {
 
       {batchesError && <p className="text-brick font-medium">{batchesError}</p>}
 
+      {!session && !batchesError && selectedBatch && (
+        <div className="bg-card border border-rule rounded-lg p-4 flex items-center gap-3">
+          <label className="text-xs font-mono uppercase tracking-wide text-ink/60">
+            QR Validity (minutes) for {selectedBatch.name}
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="180"
+            value={validityMinutes}
+            onChange={(e) => setValidityMinutes(e.target.value)}
+            className="w-20 border border-rule rounded px-2 py-1 bg-paper focus-visible:outline-forest"
+          />
+          <button
+            onClick={handleSaveValidity}
+            disabled={savingValidity}
+            className="glass-btn bg-forestGlass text-white rounded px-4 py-1.5 text-sm font-medium hover:bg-forestGlass/70 transition-colors disabled:opacity-60"
+          >
+            {savingValidity ? 'Saving…' : 'Save'}
+          </button>
+          {validitySaved && <span className="text-forest text-sm">Saved ✓</span>}
+          {validityError && <span className="text-brick text-sm">{validityError}</span>}
+        </div>
+      )}
+
       {!session && !batchesError && (
         <div className="bg-card border border-rule rounded-lg p-10 text-center space-y-4">
           <p className="text-sm text-ink/60">
-            Generate a QR code valid for 5 minutes. Students scan it to mark themselves present.
+            Generate a QR code valid for {selectedBatch?.qr_validity_minutes ?? 5} minutes. Students scan it to mark themselves present.
           </p>
           {generateError && <p className="text-sm text-brick font-medium">{generateError}</p>}
           <button

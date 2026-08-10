@@ -7,6 +7,7 @@ const batchRoutes = require('./routes/batchRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const qrRoutes = require('./routes/qrRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');const reportRoutes = require('./routes/reportRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 const app = express();
 const allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -35,5 +36,6 @@ app.use('/api/students', studentRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/contact', contactRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

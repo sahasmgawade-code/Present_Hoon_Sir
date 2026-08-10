@@ -10,6 +10,83 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const PHS_BRAND = {
+  bg: [35, 79, 56],       // #234F38 forestDark
+  gold: [184, 132, 46],   // #B8842E brick/gold
+  cream: [239, 238, 230], // #EFEEE6 paper
+};
+
+function drawPhsLogoMark(doc, x, y, size) {
+  const s = size / 140; // scale factor from the 140x140 Logo.jsx viewBox
+  doc.setFillColor(...PHS_BRAND.bg);
+  doc.roundedRect(x, y, size, size, size * 0.2, size * 0.2, 'F');
+  doc.setFillColor(...PHS_BRAND.gold);
+  doc.rect(x + 16 * s, y + 16 * s, 9 * s, 9 * s, 'F');
+  doc.rect(x + 30 * s, y + 16 * s, 9 * s, 9 * s, 'F');
+  doc.rect(x + 16 * s, y + 30 * s, 9 * s, 9 * s, 'F');
+  doc.setDrawColor(...PHS_BRAND.cream);
+  doc.setLineWidth(Math.max(size * 0.09, 0.6));
+  doc.setLineCap('round');
+  doc.setLineJoin('round');
+  doc.line(x + 24 * s, y + 80 * s, x + 52 * s, y + 108 * s);
+  doc.line(x + 52 * s, y + 108 * s, x + 118 * s, y + 34 * s);
+}
+
+function addPhsHeader(doc, reportTitle, subtitleLines = []) {
+  const logoSize = 12;
+  const logoX = 14;
+  const logoY = 10;
+  drawPhsLogoMark(doc, logoX, logoY, logoSize);
+
+  const textX = logoX + logoSize + 4;
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(35, 79, 56);
+  doc.text('Present Hoon Sir!', textX, logoY + 5.5);
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 110);
+  doc.text('PHS-AMS - Attendance Management System', textX, logoY + 10.5);
+
+  doc.setDrawColor(220, 218, 205);
+  doc.setLineWidth(0.4);
+  doc.line(14, logoY + logoSize + 4, 196, logoY + logoSize + 4);
+
+  let cursorY = logoY + logoSize + 13;
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(20, 20, 18);
+  doc.text(reportTitle, 14, cursorY);
+  cursorY += 7;
+
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 55);
+  subtitleLines.forEach((line) => {
+    doc.text(line, 14, cursorY);
+    cursorY += 6;
+  });
+
+  return cursorY + 2; // Y position where table content should start
+}
+
+function addPhsFooter(doc) {
+  const pageCount = doc.internal.getNumberOfPages();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(220, 218, 205);
+    doc.setLineWidth(0.3);
+    doc.line(14, pageHeight - 16, pageWidth - 14, pageHeight - 16);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 110);
+    doc.text('Report created by Present Hoon Sir! - Attendance Management System', 14, pageHeight - 10);
+    doc.text(`Page ${i} of ${pageCount}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+  }
+}
 function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail }) {
   const isOpen = expandedId === s.studentId;
   const absentDates = detail ? detail.history.filter((h) => h.status === 'absent').map((h) => h.date) : [];
@@ -17,23 +94,23 @@ function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail 
   function downloadStudentPdf() {
     if (!detail) return;
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(`Attendance Report — ${detail.student.firstName} ${detail.student.lastName}`, 14, 18);
-    doc.setFontSize(10);
-    doc.text(`URN: ${detail.student.urn}`, 14, 26);
-    doc.text(`Batch: ${batchName}`, 14, 32);
-    doc.text(
-      `Present: ${detail.presentCount} / ${detail.totalWorkingDays}  (${detail.percentage}%)`,
-      14,
-      38
+    const startY = addPhsHeader(
+      doc,
+      `Attendance Report — ${detail.student.firstName} ${detail.student.lastName}`,
+      [
+        `URN: ${detail.student.urn}`,
+        `Batch: ${batchName}`,
+        `Present: ${detail.presentCount} / ${detail.totalWorkingDays}  (${detail.percentage}%)`,
+      ]
     );
 
     autoTable(doc, {
-      startY: 44,
+      startY,
       head: [['Date', 'Status', 'Method']],
       body: detail.history.map((h) => [h.date, h.status, h.method || '-']),
     });
 
+    addPhsFooter(doc);
     doc.save(`${detail.student.urn}-attendance.pdf`);
   }
 
@@ -247,16 +324,17 @@ export default function Reports() {
 
   function buildPdf(reportData, batchName, subtitle) {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(`Attendance Report — ${batchName}`, 14, 18);
-    doc.setFontSize(10);
-    doc.text(subtitle, 14, 26);
-    doc.text(`Total working days: ${reportData.totalWorkingDays}`, 14, 32);
+    const headerEndY = addPhsHeader(doc, `Attendance Report — ${batchName}`, [
+      subtitle,
+      `Total working days: ${reportData.totalWorkingDays}`,
+    ]);
 
+    doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
-    doc.text(`Defaulters (below 75%)`, 14, 42);
+    doc.setTextColor(20, 20, 18);
+    doc.text(`Defaulters (below 75%)`, 14, headerEndY);
     autoTable(doc, {
-      startY: 46,
+      startY: headerEndY + 4,
       head: [['URN', 'Name', 'Present', 'Total', '%']],
       body: reportData.defaulters.map((s) => [
         s.urn, `${s.firstName} ${s.lastName}`, s.presentCount, s.totalWorkingDays, `${s.percentage}%`,
@@ -265,7 +343,9 @@ export default function Reports() {
     });
 
     const afterDefaulters = doc.lastAutoTable.finalY + 10;
+    doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
+    doc.setTextColor(20, 20, 18);
     doc.text(`Good Standing (75% and above)`, 14, afterDefaulters);
     autoTable(doc, {
       startY: afterDefaulters + 4,
@@ -276,6 +356,7 @@ export default function Reports() {
       headStyles: { fillColor: [47, 111, 79] },
     });
 
+    addPhsFooter(doc);
     return doc;
   }
 

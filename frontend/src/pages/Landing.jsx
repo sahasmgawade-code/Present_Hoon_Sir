@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Logo from '../components/Logo.jsx';
 import Footer from '../components/Footer.jsx';
+import ContactModal from '../components/ContactModal.jsx';
 const features = [
   {
     title: 'Generate QR codes per batch',
@@ -39,6 +40,7 @@ const audience = [
 
 export default function Landing() {
   const { admin } = useAuth();
+  const [showContact, setShowContact] = useState(false);
 
   // Logged-in users should land on their dashboard, not the marketing page.
   if (admin) return <Navigate to="/dashboard" replace />;
@@ -49,12 +51,20 @@ export default function Landing() {
       <header className="border-b border-rule bg-card">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Logo iconSize={32} textSize="text-base" showSubtitle={false} />
-          <Link
-            to="/login"
-            className="glass-btn px-4 py-1.5 text-sm font-medium rounded border border-forest text-forestDark hover:bg-forestGlass hover:text-white transition-colors"
-          >
-            Admin Login
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowContact(true)}
+              className="glass-btn px-4 py-1.5 text-sm font-medium rounded border border-rule text-ink/70 hover:text-ink transition-colors"
+            >
+              Contact Us
+            </button>
+            <Link
+              to="/login"
+              className="glass-btn px-4 py-1.5 text-sm font-medium rounded border border-forest text-forestDark hover:bg-forestGlass hover:text-white transition-colors"
+            >
+              Login
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -142,6 +152,7 @@ export default function Landing() {
       </section>
 
       <Footer />
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
     </div>
   );
 }

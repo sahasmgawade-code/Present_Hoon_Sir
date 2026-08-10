@@ -2,7 +2,17 @@
 <html lang="en">
 
 <head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta charset="UTF-8" />
+  <script>
+  (function () {
+    try {
+      var stored = localStorage.getItem('phsams-theme');
+      var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) document.documentElement.classList.add('dark');
+    } catch (e) {}
+  })();
+</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Primary SEO -->
@@ -63,7 +73,7 @@
   <meta name="google-site-verification" content="AXpPC44F_z_4xqGzCJzThLgFH0J6CThR56aZuF1sARQ" />
 </head>
 
-<body class="bg-paper">
+<body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

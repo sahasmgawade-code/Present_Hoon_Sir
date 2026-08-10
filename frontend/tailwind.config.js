@@ -1,23 +1,25 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        paper: '#EFEEE6',
-        ink: '#1E2A26',
-        rule: '#C9CABB',
-        forest: '#2F6F4F',
-        forestDark: '#234F38',
-        brick: '#A6432F',
-        brickDark: '#7E3222',
-        amber: '#B8842E',
-        card: '#F8F7F1',
+        paper: 'rgb(var(--color-paper) / <alpha-value>)',
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        rule: 'rgb(var(--color-rule) / <alpha-value>)',
+        forest: 'rgb(var(--color-forest) / <alpha-value>)',
+        forestDark: 'rgb(var(--color-forest-dark) / <alpha-value>)',
+        brick: 'rgb(var(--color-brick) / <alpha-value>)',
+        brickDark: 'rgb(var(--color-brick-dark) / <alpha-value>)',
+        amber: 'rgb(var(--color-amber) / <alpha-value>)',
+        card: 'rgb(var(--color-card) / <alpha-value>)',
         forestGlass: 'rgba(35, 79, 56, 0.88)',
         brickGlass: 'rgba(126, 50, 34, 0.88)',
         amberGlass: 'rgba(140, 100, 35, 0.88)',
         aero: '#3A8DA8',
         aeroDark: '#02151c',
+        tooltip: '#234F38',
       },
       fontFamily: {
         display: ['"Fraunces"', 'serif'],

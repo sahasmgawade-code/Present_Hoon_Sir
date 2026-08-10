@@ -7,7 +7,7 @@ export default function AttendancePie({ percentage, size = 120 }) {
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.max(0, Math.min(100, percentage));
   const dash = (clamped / 100) * circumference;
-  const color = clamped < 75 ? '#A6432F' : '#2F6F4F'; // brick / forest
+  const color = clamped < 75 ? 'rgb(var(--color-brick))' : 'rgb(var(--color-forest))';
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -16,7 +16,7 @@ export default function AttendancePie({ percentage, size = 120 }) {
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="#C9CABB"
+        stroke="rgb(var(--color-rule))"
         strokeWidth={stroke}
       />
       <circle
@@ -38,7 +38,7 @@ export default function AttendancePie({ percentage, size = 120 }) {
         className="font-display"
         fontSize={size * 0.2}
         fontWeight="600"
-        fill="#1E2A26"
+        fill="rgb(var(--color-ink))"
       >
         {clamped}%
       </text>

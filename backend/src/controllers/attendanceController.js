@@ -1,5 +1,55 @@
 const pool = require('../config/db');
+const transporter = require('../utils/mailer');
 
+// Email every eligible admin when a student is newly marked absent
+async function notifyAbsentees(batchId, date, studentIds) {
+  try {
+    if (studentIds.length === 0) return;
+
+    const batchRes = await pool.query('SELECT name FROM batches WHERE id = $1', [batchId]);
+    const batchName = batchRes.rows[0]?.name || `Batch #${batchId}`;
+
+    const studentsRes = await pool.query(
+      `SELECT id, first_name, last_name FROM students WHERE id = ANY($1::int[])`,
+      [studentIds]
+    );
+
+    const recipientsRes = await pool.query(
+      `SELECT DISTINCT a.email, a.name
+       FROM admins a
+       LEFT JOIN batch_admins ba ON ba.admin_id = a.id AND ba.batch_id = $1
+       WHERE a.email_notifications_enabled = true
+         AND (a.role = 'super_admin' OR ba.admin_id IS NOT NULL)`,
+      [batchId]
+    );
+
+    if (recipientsRes.rows.length === 0) return;
+
+    for (const student of studentsRes.rows) {
+      const studentName = `${student.first_name} ${student.last_name}`;
+      const html = `
+        <h2>Attendance Update — PHS-AMS</h2>
+        <p><strong>Student:</strong> ${studentName}</p>
+        <p><strong>Status:</strong> Absent</p>
+        <p><strong>Date:</strong> ${date}</p>
+        <p><strong>Batch:</strong> ${batchName}</p>
+      `;
+
+      for (const recipient of recipientsRes.rows) {
+        transporter
+          .sendMail({
+            from: `"PHS-AMS Attendance Alerts" <${process.env.SMTP_USER}>`,
+            to: recipient.email,
+            subject: `Absent: ${studentName} — ${batchName} (${date})`,
+            html,
+          })
+          .catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
+      }
+    }
+  } catch (err) {
+    console.error('notifyAbsentees error:', err);
+  }
+}
 async function canAccessBatch(admin, batchId) {
   if (admin.role === 'super_admin') return true;
   const result = await pool.query(
@@ -56,6 +106,13 @@ async function saveAttendanceForDate(req, res) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
 
+    // snapshot previous statuses so we only email NEW absences, not every re-save
+    const existing = await pool.query(
+      'SELECT student_id, status FROM attendance WHERE batch_id = $1 AND date = $2',
+      [batchId, date]
+    );
+    const prevStatus = new Map(existing.rows.map((r) => [r.student_id, r.status]));
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -79,6 +136,12 @@ async function saveAttendanceForDate(req, res) {
     } finally {
       client.release();
     }
+
+    // fire-and-forget email alerts for students newly marked absent
+    const newlyAbsentIds = records
+      .filter((r) => r.status === 'absent' && prevStatus.get(r.studentId) !== 'absent')
+      .map((r) => r.studentId);
+    notifyAbsentees(batchId, date, newlyAbsentIds);
 
     res.json({ message: 'Attendance saved', date, count: records.length });
   } catch (err) {

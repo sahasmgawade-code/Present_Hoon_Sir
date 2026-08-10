@@ -3,7 +3,7 @@ const QRCode = require('qrcode');
 const pool = require('../config/db');
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const SESSION_MINUTES = 5;
+const DEFAULT_SESSION_MINUTES = 5; // fallback if a batch somehow has no value set
 
 // Admin: generate a new QR session for a batch
 async function generateSession(req, res) {
@@ -19,8 +19,12 @@ async function generateSession(req, res) {
       if (access.rows.length === 0) return res.status(403).json({ error: 'No access to this batch' });
     }
 
+    const batchRes = await pool.query('SELECT qr_validity_minutes FROM batches WHERE id = $1', [batchId]);
+    if (batchRes.rows.length === 0) return res.status(404).json({ error: 'Batch not found' });
+    const sessionMinutes = batchRes.rows[0].qr_validity_minutes || DEFAULT_SESSION_MINUTES;
+
     const token = uuidv4();
-    const expiresAt = new Date(Date.now() + SESSION_MINUTES * 60 * 1000);
+    const expiresAt = new Date(Date.now() + sessionMinutes * 60 * 1000);
 
     const result = await pool.query(
       `INSERT INTO qr_sessions (batch_id, session_token, expires_at)

@@ -6,6 +6,7 @@ const {
   listBatches,
   assignAdminToBatch,
   revokeAdminFromBatch,
+  updateBatchSettings,
 } = require('../controllers/batchController');
 const { verifyToken, requireRole } = require('../middleware/auth');
 router.use(verifyToken); // all batch routes require login
@@ -14,5 +15,6 @@ router.get('/', listBatches);
 router.post('/', createBatch);
 router.delete('/:id', deleteBatch);
 router.post('/:id/assign-admin', requireRole('super_admin'), assignAdminToBatch);
+router.patch('/:id/settings', updateBatchSettings);
 
 module.exports = router;

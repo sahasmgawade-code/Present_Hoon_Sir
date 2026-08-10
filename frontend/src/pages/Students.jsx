@@ -1,8 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-import { useAuth } from '../context/AuthContext.jsx';
 import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
 const emptyForm = { urn: '', firstName: '', lastName: '', phone: '', email: '', parentPhone: '' };
+
+function GearIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 function StudentForm({ initial, onCancel, onSubmit, submitLabel, error, lockUrn }) {
   const [form, setForm] = useState(initial);
@@ -76,8 +85,6 @@ function StudentForm({ initial, onCancel, onSubmit, submitLabel, error, lockUrn 
 }
 
 export default function Students() {
-  const { isSuperAdmin } = useAuth();
-
   const [batches, setBatches] = useState([]);
   const [batchId, setBatchId] = useSelectedBatch();
   const [students, setStudents] = useState([]);
@@ -87,9 +94,6 @@ export default function Students() {
   const [search, setSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [addError, setAddError] = useState('');
-  const [editingId, setEditingId] = useState(null);
-  const [editError, setEditError] = useState('');
-  const [busyId, setBusyId] = useState(null); // student id currently being deleted/blacklisted
 
   useEffect(() => {
     api.listBatches()
@@ -154,42 +158,6 @@ export default function Students() {
     }
   }
 
-  async function handleEdit(studentId, form) {
-    setEditError('');
-    try {
-      await api.updateStudent(studentId, form);
-      setEditingId(null);
-      await loadStudents(batchId);
-    } catch (err) {
-      setEditError(err.message || 'Could not update student.');
-    }
-  }
-
-  async function handleDelete(studentId, name) {
-    if (!window.confirm(`Remove ${name} from this batch? This cannot be undone.`)) return;
-    setBusyId(studentId);
-    try {
-      await api.deleteStudent(studentId);
-      await loadStudents(batchId);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handleBlacklistToggle(studentId, currentlyBlacklisted) {
-    setBusyId(studentId);
-    try {
-      await api.blacklistStudent(studentId, !currentlyBlacklisted);
-      await loadStudents(batchId);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   if (batches.length === 0 && !loading) {
     return (
       <div className="text-center py-24">
@@ -208,7 +176,6 @@ export default function Students() {
           onChange={(e) => {
             setBatchId(Number(e.target.value));
             setShowAddForm(false);
-            setEditingId(null);
           }}
           className="border border-rule rounded px-3 py-2 bg-card font-medium"
         >
@@ -232,7 +199,6 @@ export default function Students() {
           onClick={() => {
             setShowAddForm((v) => !v);
             setAddError('');
-            setEditingId(null);
           }}
           className="glass-btn bg-forestGlass text-white rounded px-5 py-2 font-medium hover:bg-forestGlass/70 transition-colors"
         >
@@ -262,71 +228,31 @@ export default function Students() {
       ) : (
         <div className="bg-card border border-rule rounded-lg divide-y divide-rule overflow-hidden">
           {filtered.map((s) => (
-            <div key={s.id}>
-              {editingId === s.id ? (
-                <div className="p-4">
-                  <StudentForm
-                    initial={{
-                      urn: s.urn,
-                      firstName: s.first_name,
-                      lastName: s.last_name,
-                      phone: s.phone || '',
-                      email: s.email || '',
-                      parentPhone: s.parent_phone || '',
-                    }}
-                    onCancel={() => setEditingId(null)}
-                    onSubmit={(form) => handleEdit(s.id, form)}
-                    submitLabel="Save Changes"
-                    error={editError}
-                    lockUrn={true}
-                  />
+            <div key={s.id} className="p-4 flex items-center justify-between flex-wrap gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{s.first_name} {s.last_name}</span>
+                  <span className="font-mono text-xs text-ink/50">{s.urn}</span>
+                  {s.is_blacklisted && (
+                    <span className="text-xs font-mono uppercase tracking-wide text-brick border border-brick rounded px-1.5 py-0.5">
+                      Blacklisted
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="p-4 flex items-center justify-between flex-wrap gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium">{s.first_name} {s.last_name}</span>
-                      <span className="font-mono text-xs text-ink/50">{s.urn}</span>
-                      {s.is_blacklisted && (
-                        <span className="text-xs font-mono uppercase tracking-wide text-brick border border-brick rounded px-1.5 py-0.5">
-                          Blacklisted
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-ink/50 mt-1 space-x-3">
-                      {s.phone && <span>{s.phone}</span>}
-                      {s.email && <span>{s.email}</span>}
-                      {s.parent_phone && <span>Parent: {s.parent_phone}</span>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => {
-                        setEditingId(s.id);
-                        setEditError('');
-                        setShowAddForm(false);
-                      }}
-                      className="px-3 py-1.5 text-sm font-medium rounded border border-rule text-ink/70 hover:bg-ink/5 transition-colors"
-                    >
-                      Edit
-                    </button>
-                      <button
-                        onClick={() => handleBlacklistToggle(s.id, s.is_blacklisted)}
-                        disabled={busyId === s.id}
-                        className="glass-btn px-3 py-1.5 text-sm font-medium rounded border border-amber text-amber hover:bg-amberGlass hover:text-white transition-colors disabled:opacity-60"
-                      >
-                        {s.is_blacklisted ? 'Unblacklist' : 'Blacklist'}
-                      </button>
-                    <button
-                      onClick={() => handleDelete(s.id, `${s.first_name} ${s.last_name}`)}
-                      disabled={busyId === s.id}
-                      className="glass-btn px-3 py-1.5 text-sm font-medium rounded border border-brick text-brick hover:bg-brickGlass hover:text-white transition-colors disabled:opacity-60"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                <div className="text-xs text-ink/50 mt-1 space-x-3">
+                  {s.phone && <span>{s.phone}</span>}
+                  {s.email && <span>{s.email}</span>}
+                  {s.parent_phone && <span>Parent: {s.parent_phone}</span>}
                 </div>
-              )}
+              </div>
+              <Link
+                to={`/students/${s.id}/settings`}
+                state={{ batchId }}
+                className="p-2 rounded border border-rule text-ink/70 hover:bg-ink/5 transition-colors shrink-0"
+                aria-label={`Settings for ${s.first_name} ${s.last_name}`}
+              >
+                <GearIcon className="w-4 h-4" />
+              </Link>
             </div>
           ))}
         </div>

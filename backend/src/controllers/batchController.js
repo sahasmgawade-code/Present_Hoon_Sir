@@ -61,6 +61,41 @@ async function deleteBatch(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
+
+// Any admin with access to the batch can update its settings (currently just QR validity duration)
+async function updateBatchSettings(req, res) {
+  const { id } = req.params;
+  const { qrValidityMinutes } = req.body;
+
+  const minutes = Number(qrValidityMinutes);
+  if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) {
+    return res.status(400).json({ error: 'qrValidityMinutes must be an integer between 1 and 180' });
+  }
+
+  try {
+    // same access-check pattern used elsewhere: super_admin always allowed,
+    // regular admin only if assigned to this batch
+    if (req.admin.role !== 'super_admin') {
+      const access = await pool.query(
+        'SELECT 1 FROM batch_admins WHERE batch_id = $1 AND admin_id = $2',
+        [id, req.admin.id]
+      );
+      if (access.rows.length === 0) return res.status(403).json({ error: 'No access to this batch' });
+    }
+
+    const result = await pool.query(
+      `UPDATE batches SET qr_validity_minutes = $1 WHERE id = $2 RETURNING *`,
+      [minutes, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    res.json({ batch: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
 // List batches — super_admin sees all, admin sees only assigned ones
 async function listBatches(req, res) {
   try {
@@ -132,4 +167,4 @@ async function revokeAdminFromBatch(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { createBatch, deleteBatch, listBatches, assignAdminToBatch, revokeAdminFromBatch };
+module.exports = { createBatch, deleteBatch, listBatches, assignAdminToBatch, revokeAdminFromBatch, updateBatchSettings };
