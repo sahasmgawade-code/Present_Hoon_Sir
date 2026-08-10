@@ -1,4 +1,4 @@
-const { apiInstance, SibApiV3Sdk } = require('../utils/mailer');
+const { transporter } = require('../utils/mailer');
 async function submitContactForm(req, res) {
   const { name, email, phone, organization, message } = req.body;
 
@@ -7,22 +7,21 @@ async function submitContactForm(req, res) {
   }
 
   try {
-    const mail = new SibApiV3Sdk.SendSmtpEmail();
-    mail.sender = { email: process.env.BREVO_SENDER_EMAIL, name: 'PHS-AMS Contact Form' };
-    mail.to = [{ email: process.env.CONTACT_RECEIVER_EMAIL }];
-    mail.replyTo = { email };
-    mail.subject = `New Contact Enquiry from ${name}`;
-    mail.htmlContent = `
-      <h2>New Contact Us Submission — PHS-AMS</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Phone:</strong> ${phone}</p>
-      <p><strong>Organization:</strong> ${organization || '-'}</p>
-      <p><strong>Message:</strong></p>
-      <p>${(message || '-').replace(/\n/g, '<br/>')}</p>
-    `;
-
-    await apiInstance.sendTransacEmail(mail);
+    await transporter.sendMail({
+      from: `"PHS-AMS Contact Form" <${process.env.GMAIL_USER}>`,
+      to: process.env.CONTACT_RECEIVER_EMAIL,
+      replyTo: email,
+      subject: `New Contact Enquiry from ${name}`,
+      html: `
+        <h2>New Contact Us Submission — PHS-AMS</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>Organization:</strong> ${organization || '-'}</p>
+        <p><strong>Message:</strong></p>
+        <p>${(message || '-').replace(/\n/g, '<br/>')}</p>
+      `,
+    });
 
     res.json({ success: true });
   } catch (err) {

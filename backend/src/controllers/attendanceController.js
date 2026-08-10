@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { apiInstance, SibApiV3Sdk } = require('../utils/mailer');
+const { transporter } = require('../utils/mailer');
 // Email every eligible admin when a student is newly marked absent
 async function notifyAbsentees(batchId, date, studentIds) {
   try {
@@ -35,14 +35,13 @@ async function notifyAbsentees(batchId, date, studentIds) {
       `;
 
       for (const recipient of recipientsRes.rows) {
-        const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.sender = { email: process.env.BREVO_SENDER_EMAIL, name: 'PHS-AMS Attendance Alerts' };
-        mail.to = [{ email: recipient.email }];
-        mail.subject = `Absent: ${studentName} — ${batchName} (${date})`;
-        mail.htmlContent = html;
-
-        apiInstance
-          .sendTransacEmail(mail)
+        transporter
+          .sendMail({
+            from: `"PHS-AMS Attendance Alerts" <${process.env.GMAIL_USER}>`,
+            to: recipient.email,
+            subject: `Absent: ${studentName} — ${batchName} (${date})`,
+            html,
+          })
           .catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
       }
     }
