@@ -1,14 +1,4 @@
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 465,
-  secure: true, // true for port 465
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+const resend = require('../utils/mailer');
 
 async function submitContactForm(req, res) {
   const { name, email, phone, organization, message } = req.body;
@@ -18,8 +8,8 @@ async function submitContactForm(req, res) {
   }
 
   try {
-    await transporter.sendMail({
-      from: `"PHS-AMS Contact Form" <${process.env.SMTP_USER}>`,
+    await resend.emails.send({
+      from: 'PHS-AMS Contact Form <onboarding@resend.dev>',
       to: process.env.CONTACT_RECEIVER_EMAIL,
       replyTo: email,
       subject: `New Contact Enquiry from ${name}`,

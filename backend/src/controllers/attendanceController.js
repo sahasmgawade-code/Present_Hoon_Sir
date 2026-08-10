@@ -36,9 +36,9 @@ async function notifyAbsentees(batchId, date, studentIds) {
       `;
 
       for (const recipient of recipientsRes.rows) {
-        transporter
-          .sendMail({
-            from: `"PHS-AMS Attendance Alerts" <${process.env.SMTP_USER}>`,
+        transporter.emails
+          .send({
+            from: 'PHS-AMS Attendance Alerts <onboarding@resend.dev>',
             to: recipient.email,
             subject: `Absent: ${studentName} — ${batchName} (${date})`,
             html,
