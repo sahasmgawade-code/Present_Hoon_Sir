@@ -1,5 +1,6 @@
-const { Resend } = require('resend');
+const SibApiV3Sdk = require('@getbrevo/brevo');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+apiInstance.setApiKey(SibApiV3Sdk.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
-module.exports = resend;
+module.exports = { apiInstance, SibApiV3Sdk };
