@@ -80,7 +80,7 @@ async function deleteAdmin(req, res) {
 async function listAdmins(req, res) {
   try {
     const result = await pool.query(
-      'SELECT id, name, email, role, email_notifications_enabled, created_at FROM admins ORDER BY id'
+      'SELECT id, name, email, role, email_notifications_enabled, sms_notifications_enabled, created_at FROM admins ORDER BY id'
     );
     res.json({ admins: result.rows });
   } catch (err) {
@@ -153,4 +153,28 @@ async function toggleEmailNotifications(req, res) {
   }
 }
 
-module.exports = { createAdmin, updateAdmin, deleteAdmin, listAdmins, listAdminsBasic, getAdminBatchAccess, toggleEmailNotifications };
+// Super Admin toggles whether an admin's actions trigger absentee SMS to parents
+async function toggleSmsNotifications(req, res) {
+  const { id } = req.params;
+  const { enabled } = req.body;
+
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ error: 'enabled (boolean) is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE admins SET sms_notifications_enabled = $1 WHERE id = $2 RETURNING id, name, email, role, sms_notifications_enabled',
+      [enabled, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    res.json({ admin: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+module.exports = { createAdmin, updateAdmin, deleteAdmin, listAdmins, listAdminsBasic, getAdminBatchAccess, toggleEmailNotifications, toggleSmsNotifications };

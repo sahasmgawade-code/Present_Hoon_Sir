@@ -1,8 +1,8 @@
 const pool = require('../config/db');
 const { sendEmail } = require('../utils/mailer');
 const { sendSMS } = require('../utils/smsSender');
-// Email every eligible admin when a student is newly marked absent
-async function notifyAbsentees(batchId, date, studentIds) {
+// Email every eligible admin, and SMS parents, when a student is newly marked absent
+async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
   try {
     if (studentIds.length === 0) return;
 
@@ -23,7 +23,15 @@ async function notifyAbsentees(batchId, date, studentIds) {
       [batchId]
     );
 
-    if (recipientsRes.rows.length === 0) return;
+    // SMS is only sent if the admin who marked attendance has SMS notifications enabled
+    // (this flag is controlled by the Super Admin on each admin's settings page)
+    const actingAdminRes = await pool.query(
+      'SELECT sms_notifications_enabled FROM admins WHERE id = $1',
+      [actingAdminId]
+    );
+    const smsAllowed = actingAdminRes.rows[0]?.sms_notifications_enabled === true;
+
+    if (recipientsRes.rows.length === 0 && !smsAllowed) return;
 
     for (const student of studentsRes.rows) {
       const studentName = `${student.first_name} ${student.last_name}`;
@@ -43,7 +51,7 @@ async function notifyAbsentees(batchId, date, studentIds) {
         }).catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
       }
 
-      if (student.parent_phone) {
+      if (smsAllowed && student.parent_phone) {
         sendSMS({
           phoneNumber: student.parent_phone,
           message: `PHS-AMS: ${studentName} was marked ABSENT on ${date} for ${batchName}.`,
@@ -146,7 +154,7 @@ async function saveAttendanceForDate(req, res) {
     const newlyAbsentIds = records
       .filter((r) => r.status === 'absent' && prevStatus.get(r.studentId) !== 'absent')
       .map((r) => r.studentId);
-    notifyAbsentees(batchId, date, newlyAbsentIds);
+    notifyAbsentees(batchId, date, newlyAbsentIds, req.admin.id);
 
     res.json({ message: 'Attendance saved', date, count: records.length });
   } catch (err) {

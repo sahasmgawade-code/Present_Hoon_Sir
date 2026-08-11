@@ -5,9 +5,10 @@ CREATE TABLE admins (
   email VARCHAR(150) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role VARCHAR(20) NOT NULL CHECK (role IN ('super_admin', 'admin')),
+  email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+  sms_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP DEFAULT NOW()
 );
-
 -- Batches
 CREATE TABLE batches (
   id SERIAL PRIMARY KEY,
