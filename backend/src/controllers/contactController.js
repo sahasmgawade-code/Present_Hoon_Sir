@@ -1,4 +1,4 @@
-const transporter = require('../utils/mailer');
+const { sendEmail } = require('../utils/mailer');
 async function submitContactForm(req, res) {
   const { name, email, phone, organization, message } = req.body;
 
@@ -7,10 +7,8 @@ async function submitContactForm(req, res) {
   }
 
   try {
-    await transporter.sendMail({
-      from: `"PHS-AMS Contact Form" <${process.env.BREVO_SMTP_LOGIN}>`,
+    await sendEmail({
       to: process.env.CONTACT_RECEIVER_EMAIL,
-      replyTo: email,
       subject: `New Contact Enquiry from ${name}`,
       html: `
         <h2>New Contact Us Submission — PHS-AMS</h2>

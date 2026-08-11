@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const transporter = require('../utils/mailer');
+const { sendEmail } = require('../utils/mailer');
 // Email every eligible admin when a student is newly marked absent
 async function notifyAbsentees(batchId, date, studentIds) {
   try {
@@ -35,14 +35,11 @@ async function notifyAbsentees(batchId, date, studentIds) {
       `;
 
       for (const recipient of recipientsRes.rows) {
-        transporter
-          .sendMail({
-            from: `"PHS-AMS Attendance Alerts" <${process.env.BREVO_SMTP_LOGIN}>`,
-            to: recipient.email,
-            subject: `Absent: ${studentName} — ${batchName} (${date})`,
-            html,
-          })
-          .catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
+        sendEmail({
+          to: recipient.email,
+          subject: `Absent: ${studentName} — ${batchName} (${date})`,
+          html,
+        }).catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
       }
     }
   } catch (err) {
