@@ -1,5 +1,4 @@
 const pool = require('../config/db');
-const { TransactionalEmailsApi, SendSmtpEmail } = require('@getbrevo/brevo');
 const transporter = require('../utils/mailer');
 // Email every eligible admin when a student is newly marked absent
 async function notifyAbsentees(batchId, date, studentIds) {
@@ -45,7 +44,12 @@ async function notifyAbsentees(batchId, date, studentIds) {
           })
           .catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
       }
+    }
+  } catch (err) {
+    console.error('Error notifying absentees:', err.message);
+  }
 }
+
 async function canAccessBatch(admin, batchId) {
   if (admin.role === 'super_admin') return true;
   const result = await pool.query(
@@ -145,5 +149,4 @@ async function saveAttendanceForDate(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
 module.exports = { getAttendanceForDate, saveAttendanceForDate };
