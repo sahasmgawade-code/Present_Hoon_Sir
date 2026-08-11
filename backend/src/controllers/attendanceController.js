@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const { TransactionalEmailsApi, SendSmtpEmail } = require('@getbrevo/brevo');
-const { apiInstance } = require('../utils/mailer');
+const transporter = require('../utils/mailer');
 // Email every eligible admin when a student is newly marked absent
 async function notifyAbsentees(batchId, date, studentIds) {
   try {
@@ -36,20 +36,15 @@ async function notifyAbsentees(batchId, date, studentIds) {
       `;
 
       for (const recipient of recipientsRes.rows) {
-        const mail = new SendSmtpEmail();
-        mail.sender = { email: process.env.BREVO_SENDER_EMAIL, name: 'PHS-AMS Attendance Alerts' };
-        mail.to = [{ email: recipient.email }];
-        mail.subject = `Absent: ${studentName} — ${batchName} (${date})`;
-        mail.htmlContent = html;
-
-        apiInstance
-          .sendTransacEmail(mail)
+        transporter
+          .sendMail({
+            from: `"PHS-AMS Attendance Alerts" <${process.env.BREVO_SMTP_LOGIN}>`,
+            to: recipient.email,
+            subject: `Absent: ${studentName} — ${batchName} (${date})`,
+            html,
+          })
           .catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
       }
-    }
-  } catch (err) {
-    console.error('notifyAbsentees error:', err);
-  }
 }
 async function canAccessBatch(admin, batchId) {
   if (admin.role === 'super_admin') return true;
