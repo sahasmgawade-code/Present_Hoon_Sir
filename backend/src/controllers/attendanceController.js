@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const { sendEmail } = require('../utils/mailer');
+const { sendSMS } = require('../utils/smsSender');
 // Email every eligible admin when a student is newly marked absent
 async function notifyAbsentees(batchId, date, studentIds) {
   try {
@@ -9,7 +10,7 @@ async function notifyAbsentees(batchId, date, studentIds) {
     const batchName = batchRes.rows[0]?.name || `Batch #${batchId}`;
 
     const studentsRes = await pool.query(
-      `SELECT id, first_name, last_name FROM students WHERE id = ANY($1::int[])`,
+      `SELECT id, first_name, last_name, parent_phone FROM students WHERE id = ANY($1::int[])`,
       [studentIds]
     );
 
@@ -40,6 +41,13 @@ async function notifyAbsentees(batchId, date, studentIds) {
           subject: `Absent: ${studentName} — ${batchName} (${date})`,
           html,
         }).catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
+      }
+
+      if (student.parent_phone) {
+        sendSMS({
+          phoneNumber: student.parent_phone,
+          message: `PHS-AMS: ${studentName} was marked ABSENT on ${date} for ${batchName}.`,
+        }).catch((err) => console.error(`Failed to SMS ${student.parent_phone}:`, err.message));
       }
     }
   } catch (err) {
