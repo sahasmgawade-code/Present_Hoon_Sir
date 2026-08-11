@@ -23,6 +23,7 @@ export default function AdminSettings() {
   const [togglingBatchId, setTogglingBatchId] = useState(null);
 
   const [togglingEmail, setTogglingEmail] = useState(false);
+  const [togglingSms, setTogglingSms] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function loadAdmin() {
@@ -107,6 +108,19 @@ export default function AdminSettings() {
       alert(err.message || 'Could not update email notification setting.');
     } finally {
       setTogglingEmail(false);
+    }
+  }
+
+  async function toggleSms() {
+    if (!admin) return;
+    setTogglingSms(true);
+    try {
+      await api.toggleAdminSmsNotifications(adminId, !admin.sms_notifications_enabled);
+      setAdmin((prev) => ({ ...prev, sms_notifications_enabled: !prev.sms_notifications_enabled }));
+    } catch (err) {
+      alert(err.message || 'Could not update SMS notification setting.');
+    } finally {
+      setTogglingSms(false);
     }
   }
 
@@ -236,6 +250,38 @@ export default function AdminSettings() {
           <span
             className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white transition-all duration-200 ${
               admin.email_notifications_enabled ? 'left-[calc(100%-22px)]' : 'left-[2px]'
+            }`}
+            style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
+          />
+        </button>
+      </div>
+
+      {/* SMS Updates */}
+      <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="font-display text-xl">SMS Updates</h2>
+          <p className="text-sm text-ink/50 mt-1">
+            {admin.sms_notifications_enabled
+              ? 'Attendance saved by this admin will SMS parents of absentees.'
+              : 'Attendance saved by this admin will NOT SMS parents of absentees.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={admin.sms_notifications_enabled}
+          onClick={toggleSms}
+          disabled={togglingSms}
+          className="relative inline-flex h-6 w-11 items-center rounded-full transition-all disabled:opacity-60 shrink-0"
+          style={{
+            background: admin.sms_notifications_enabled
+              ? 'linear-gradient(to right, #5DCAA5, #378ADD)'
+              : 'linear-gradient(to right, #D85A30, #E24B4A)',
+          }}
+        >
+          <span
+            className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white transition-all duration-200 ${
+              admin.sms_notifications_enabled ? 'left-[calc(100%-22px)]' : 'left-[2px]'
             }`}
             style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
           />

@@ -54,7 +54,8 @@ export const api = {
   deleteAdmin: (id) => request(`/admins/${id}`, { method: 'DELETE' }),
   toggleAdminEmailNotifications: (id, enabled) =>
     request(`/admins/${id}/notifications`, { method: 'PATCH', body: { enabled } }),
-
+  toggleAdminSmsNotifications: (id, enabled) =>
+    request(`/admins/${id}/sms-notifications`, { method: 'PATCH', body: { enabled } }),
   listBatches: () => request('/batches'),
   createBatch: (name, collaboratorIds = []) =>
     request('/batches', { method: 'POST', body: { name, collaboratorIds } }),
