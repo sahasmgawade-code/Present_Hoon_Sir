@@ -3,6 +3,9 @@ const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
 function getToken() {
   return localStorage.getItem('attendqr_token');
 }
+function getStudentToken() {
+  return localStorage.getItem('attendqr_student_token');
+}
 function getDeviceToken() {
   let deviceToken = localStorage.getItem('attendqr_device_token');
   if (!deviceToken) {
@@ -11,8 +14,8 @@ function getDeviceToken() {
   }
   return deviceToken;
 }
-async function request(path, { method = 'GET', body, headers = {}, raw = false } = {}) {
-  const token = getToken();
+async function request(path, { method = 'GET', body, headers = {}, raw = false, authType = 'admin' } = {}) {
+  const token = authType === 'student' ? getStudentToken() : getToken();
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
@@ -72,7 +75,11 @@ export const api = {
   deleteStudent: (id) => request(`/students/${id}`, { method: 'DELETE' }),
   blacklistStudent: (id, blacklisted) =>
     request(`/students/${id}/blacklist`, { method: 'PATCH', body: { blacklisted } }),
-
+  setStudentCredentials: (studentId, loginId, password) =>
+    request(`/students/${studentId}/credentials`, { method: 'PATCH', body: { loginId, password } }),
+  studentLogin: (loginId, password) =>
+    request('/student-auth/login', { method: 'POST', body: { loginId, password } }),
+  getMyAttendance: () => request('/student-auth/me', { authType: 'student' }),
   getAttendanceForDate: (batchId, date) => request(`/attendance/batch/${batchId}?date=${date}`),
   saveAttendance: (batchId, date, records) =>
     request(`/attendance/batch/${batchId}`, { method: 'POST', body: { date, records } }),
@@ -111,4 +118,4 @@ async function triggerFileDownload(response) {
   a.remove();
   URL.revokeObjectURL(url);
 }
-export { getToken, getDeviceToken };
+export { getToken, getDeviceToken, getStudentToken };

@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-
+const bcrypt = require('bcrypt');
 // Helper: check if req.admin can access a given batch
 async function canAccessBatch(admin, batchId) {
   if (admin.role === 'super_admin') return true;
@@ -61,10 +61,9 @@ async function addStudent(req, res) {
     const result = await pool.query(
       `INSERT INTO students (batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted)
        VALUES ($1, $2, $3, $4, $5, $6, $7, false)
-       RETURNING *`,
+       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at`,
       [batchId, normalizedUrn, firstName, lastName, phone || null, email || null, parentPhone || null]
     );
-
     res.status(201).json({
       student: result.rows[0],
       ...(existingBatches.length > 0 ? { alreadyInOtherBatches: existingBatches } : {}),
@@ -83,7 +82,8 @@ async function listStudents(req, res) {
     }
 
     const result = await pool.query(
-      'SELECT * FROM students WHERE batch_id = $1 ORDER BY first_name',
+      `SELECT id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at
+       FROM students WHERE batch_id = $1 ORDER BY first_name`,
       [batchId]
     );
     res.json({ students: result.rows });
@@ -114,7 +114,7 @@ async function updateStudent(req, res) {
         email = COALESCE($4, email),
         parent_phone = COALESCE($5, parent_phone)
        WHERE id = $6
-       RETURNING *`,
+       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at`,
       [firstName, lastName, phone, email, parentPhone, studentId]
     );
 
@@ -162,7 +162,8 @@ async function setBlacklist(req, res) {
     }
 
     const result = await pool.query(
-      'UPDATE students SET is_blacklisted = $1 WHERE id = $2 RETURNING *',
+      `UPDATE students SET is_blacklisted = $1 WHERE id = $2
+       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at`,
       [blacklisted, studentId]
     );
 
@@ -173,4 +174,49 @@ async function setBlacklist(req, res) {
   }
 }
 
-module.exports = { addStudent, listStudents, updateStudent, deleteStudent, setBlacklist };
+// Admin: set or reset a student's Login ID + password for the student self-service portal
+async function setStudentCredentials(req, res) {
+  const { studentId } = req.params;
+  const { loginId, password } = req.body;
+
+  if (!loginId || !loginId.trim()) {
+    return res.status(400).json({ error: 'loginId is required' });
+  }
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'password must be at least 6 characters' });
+  }
+
+  try {
+    const studentRes = await pool.query('SELECT batch_id FROM students WHERE id = $1', [studentId]);
+    if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
+
+    if (!(await canAccessBatch(req.admin, studentRes.rows[0].batch_id))) {
+      return res.status(403).json({ error: 'No access to this batch' });
+    }
+
+    const normalizedLoginId = loginId.trim();
+
+    const existing = await pool.query(
+      'SELECT id FROM students WHERE login_id = $1 AND id != $2',
+      [normalizedLoginId, studentId]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(409).json({ error: 'This Login ID is already taken by another student' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const result = await pool.query(
+      `UPDATE students SET login_id = $1, password_hash = $2
+       WHERE id = $3
+       RETURNING id, login_id`,
+      [normalizedLoginId, hash, studentId]
+    );
+
+    res.json({ student: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+module.exports = { addStudent, listStudents, updateStudent, deleteStudent, setBlacklist, setStudentCredentials };

@@ -28,6 +28,11 @@ export default function StudentSettings() {
 
   const [togglingBlacklist, setTogglingBlacklist] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [credLoginId, setCredLoginId] = useState('');
+  const [credPassword, setCredPassword] = useState('');
+  const [credError, setCredError] = useState('');
+  const [credSuccess, setCredSuccess] = useState('');
+  const [savingCred, setSavingCred] = useState(false);
 
   useEffect(() => {
     if (!batchId) {
@@ -44,6 +49,7 @@ export default function StudentSettings() {
           setError('Student not found.');
         } else {
           setStudent(found);
+          setCredLoginId(found.login_id || '');
           setForm({
             urn: found.urn,
             firstName: found.first_name,
@@ -94,6 +100,31 @@ export default function StudentSettings() {
       alert(err.message);
     } finally {
       setTogglingBlacklist(false);
+    }
+  }
+
+  async function handleSaveCredentials(e) {
+    e.preventDefault();
+    setCredError('');
+    setCredSuccess('');
+    if (!credLoginId.trim() || !credPassword) {
+      setCredError('Login ID and password are required.');
+      return;
+    }
+    if (credPassword.length < 6) {
+      setCredError('Password must be at least 6 characters.');
+      return;
+    }
+    setSavingCred(true);
+    try {
+      await api.setStudentCredentials(studentId, credLoginId.trim(), credPassword);
+      setStudent((prev) => ({ ...prev, login_id: credLoginId.trim() }));
+      setCredPassword('');
+      setCredSuccess('Login credentials saved.');
+    } catch (err) {
+      setCredError(err.message || 'Could not save credentials.');
+    } finally {
+      setSavingCred(false);
     }
   }
 
@@ -177,6 +208,53 @@ export default function StudentSettings() {
           {savingEdit ? 'Saving…' : 'Save Changes'}
         </button>
       </form>
+
+      {/* Student Portal Login */}
+      <form onSubmit={handleSaveCredentials} className="bg-card border border-rule rounded-lg p-6 space-y-4">
+        <div>
+          <h2 className="font-display text-xl">Student Portal Login</h2>
+          <p className="text-sm text-ink/50 mt-1">
+            Set or reset the Login ID and password this student uses to check their own attendance.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
+              Login ID
+            </label>
+            <input
+              type="text"
+              value={credLoginId}
+              onChange={(e) => setCredLoginId(e.target.value)}
+              className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
+              {student.login_id ? 'New Password' : 'Password'}
+            </label>
+            <input
+              type="password"
+              value={credPassword}
+              onChange={(e) => setCredPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
+            />
+          </div>
+        </div>
+
+        {credError && <p className="text-sm text-brick font-medium">{credError}</p>}
+        {credSuccess && <p className="text-sm text-forestDark font-medium">{credSuccess}</p>}
+
+        <button
+          type="submit"
+          disabled={savingCred}
+          className="glass-btn bg-forestGlass text-white rounded px-5 py-2 font-medium hover:bg-forestGlass/70 transition-colors disabled:opacity-60"
+        >
+          {savingCred ? 'Saving…' : student.login_id ? 'Update Credentials' : 'Set Credentials'}
+        </button>
+      </form>
+
 
       {/* Blacklist */}
       <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">

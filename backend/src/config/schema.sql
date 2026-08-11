@@ -40,7 +40,9 @@ CREATE TABLE students (
   batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
   is_blacklisted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
-  UNIQUE (urn, batch_id)
+  UNIQUE (urn, batch_id),
+  login_id VARCHAR(50) UNIQUE,
+  password_hash VARCHAR(255)
 );
 
 -- QR sessions (one per "Generate QR" activation)

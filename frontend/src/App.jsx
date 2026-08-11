@@ -14,6 +14,9 @@ import Reports from './pages/Reports.jsx';
 import ManageAdmins from './pages/ManageAdmins.jsx';
 import AdminSettings from './pages/AdminSettings.jsx';
 import StudentSettings from './pages/StudentSettings.jsx';
+import StudentLogin from './pages/StudentLogin.jsx';
+import StudentPortal from './pages/StudentPortal.jsx';
+import StudentProtectedRoute from './components/StudentProtectedRoute.jsx';
 function StubPage({ title }) {
   return (
     <div className="text-center py-24">
@@ -29,6 +32,8 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/scan/:token" element={<ScanAttendance />} />
+      <Route path="/student/login" element={<StudentLogin />} />
+      <Route path="/student/portal" element={<StudentProtectedRoute><StudentPortal /></StudentProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
       <Route path="/batches/new" element={<ProtectedRoute><Layout><AddBatch /></Layout></ProtectedRoute>} />
       <Route path="/students" element={<ProtectedRoute><Layout><Students /></Layout></ProtectedRoute>} />
