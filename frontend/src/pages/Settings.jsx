@@ -12,6 +12,7 @@ export default function Settings() {
   const [profileError, setProfileError] = useState('');
 
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [showPwForm, setShowPwForm] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
@@ -42,6 +43,7 @@ export default function Settings() {
       await api.changePassword(pwForm.currentPassword, pwForm.newPassword);
       setPwSuccess('Password updated.');
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPwForm(false);
     } catch (err) {
       setPwError(err.message || 'Could not update password.');
     } finally {
@@ -71,8 +73,29 @@ export default function Settings() {
       </div>
 
       {/* Change Password */}
-      <form onSubmit={handleChangePassword} className="bg-card border border-rule rounded-lg p-6 space-y-4">
-        <h2 className="font-display text-xl">Change Password</h2>
+      <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="font-display text-xl">Change Password</h2>
+            <p className="text-sm text-ink/50 mt-1">
+              {showPwForm ? 'Fill in the fields below to update your password.' : 'Update your account password.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowPwForm((v) => !v);
+              setPwError('');
+              setPwSuccess('');
+            }}
+            className="glass-btn px-5 py-2 text-sm font-medium rounded border border-rule text-ink/80 hover:bg-white/20 transition-colors"
+          >
+            {showPwForm ? 'Cancel' : 'Change Password'}
+          </button>
+        </div>
+
+        {showPwForm && (
+        <form onSubmit={handleChangePassword} className="space-y-4">
         <div>
           <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
             Current Password
@@ -120,7 +143,9 @@ export default function Settings() {
         >
           {pwSaving ? 'Saving…' : 'Update Password'}
         </button>
-      </form>
+        </form>
+        )}
+      </div>
 
       {/* Notification status (read-only) — not shown for super admins, who
           manage this from the Manage Admins page instead */}
