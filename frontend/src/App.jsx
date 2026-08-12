@@ -43,6 +43,7 @@ export default function App() {
       <Route path="/edit-attendance" element={<ProtectedRoute><Layout><EditAttendance /></Layout></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
       <Route path="/admins" element={<ProtectedRoute><Layout><ManageAdmins /></Layout></ProtectedRoute>} />
+      <Route path="/admins/:id/settings" element={<ProtectedRoute><Layout><AdminSettings /></Layout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
     </Routes>
   );
