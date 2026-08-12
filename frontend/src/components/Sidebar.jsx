@@ -149,9 +149,9 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const logoutRef = useRef(null);
-  const themeRef = useRef(null);
+  const settingsRef = useRef(null);
   const [logoutHovered, setLogoutHovered] = useState(false);
-  const [themeHovered, setThemeHovered] = useState(false);
+  const [settingsHovered, setSettingsHovered] = useState(false);
 
   function go(path) {
     setMobileOpen(false);
@@ -222,33 +222,30 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           {isSuperAdmin && (
             <NavItem to="/admins" icon={icons.admin} label="Manage Admin" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
           )}
-          <NavItem to="/settings" icon={icons.settings} label="Settings" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
         </nav>
 
-        {/* Bottom: theme toggle + admin name + logout */}
+        {/* Bottom: admin name + settings + logout */}
         <div className="border-t border-rule py-3 px-2 space-y-1">
-          <div
-            className="relative"
-            onMouseEnter={() => setThemeHovered(true)}
-            onMouseLeave={() => setThemeHovered(false)}
-          >
-            <button
-              ref={themeRef}
-              onClick={toggleTheme}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-ink/70 hover:text-forest hover:bg-white/20 transition-colors ${
-                collapsed ? 'justify-center' : ''
-              }`}
-              aria-label={themeLabel}
-            >
-              <span className="shrink-0">{theme === 'dark' ? icons.sun : icons.moon}</span>
-              {!collapsed && <span className="text-sm font-medium">{themeLabel}</span>}
-            </button>
-            {collapsed && <PortalTooltip label={themeLabel} anchorRef={themeRef} visible={themeHovered} />}
-          </div>
-
           {!collapsed && (
             <p className="px-3 pb-1 text-xs font-mono text-ink/50 truncate">{admin?.name}</p>
           )}
+          <div
+            className="relative"
+            onMouseEnter={() => setSettingsHovered(true)}
+            onMouseLeave={() => setSettingsHovered(false)}
+          >
+            <button
+              ref={settingsRef}
+              onClick={() => go('/settings')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded text-ink/70 hover:text-forest hover:bg-white/20 transition-colors ${
+                collapsed ? 'justify-center' : ''
+              }`}
+            >
+              <span className="shrink-0">{icons.settings}</span>
+              {!collapsed && <span className="text-sm font-medium">Settings</span>}
+            </button>
+            {collapsed && <PortalTooltip label="Settings" anchorRef={settingsRef} visible={settingsHovered} />}
+          </div>
           <div
             className="relative"
             onMouseEnter={() => setLogoutHovered(true)}
