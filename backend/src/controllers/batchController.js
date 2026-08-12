@@ -39,24 +39,83 @@ async function createBatch(req, res) {
   }
 }
 
-// Delete a batch — only a super_admin or the admin who created it may do this.
-// A regular collaborating admin (assigned via batch_admins) is NOT enough,
-// since deleting a batch cascades to all its students, attendance, and QR history.
-async function deleteBatch(req, res) {
+// Archive a batch — only a super_admin or the admin who created it may do this.
+// Archiving hides the batch from normal views but preserves all students,
+// attendance, and QR history untouched.
+async function archiveBatch(req, res) {
   const { id } = req.params;
   try {
-    const batchRes = await pool.query('SELECT created_by FROM batches WHERE id = $1', [id]);
+    const batchRes = await pool.query('SELECT created_by, is_archived FROM batches WHERE id = $1', [id]);
     if (batchRes.rows.length === 0) {
       return res.status(404).json({ error: 'Batch not found' });
     }
 
     const isCreator = batchRes.rows[0].created_by === req.admin.id;
     if (req.admin.role !== 'super_admin' && !isCreator) {
-      return res.status(403).json({ error: 'Only a super admin or the batch creator can delete this batch' });
+      return res.status(403).json({ error: 'Only a super admin or the batch creator can archive this batch' });
     }
 
-    const result = await pool.query('DELETE FROM batches WHERE id = $1 RETURNING id', [id]);
-    res.json({ message: 'Batch deleted' });
+    if (batchRes.rows[0].is_archived) {
+      return res.status(400).json({ error: 'Batch is already archived' });
+    }
+
+    const result = await pool.query(
+      'UPDATE batches SET is_archived = TRUE WHERE id = $1 RETURNING *',
+      [id]
+    );
+    res.json({ message: 'Batch archived', batch: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// Restore a previously archived batch back to active.
+async function restoreBatch(req, res) {
+  const { id } = req.params;
+  try {
+    const batchRes = await pool.query('SELECT created_by, is_archived FROM batches WHERE id = $1', [id]);
+    if (batchRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+
+    const isCreator = batchRes.rows[0].created_by === req.admin.id;
+    if (req.admin.role !== 'super_admin' && !isCreator) {
+      return res.status(403).json({ error: 'Only a super admin or the batch creator can restore this batch' });
+    }
+
+    if (!batchRes.rows[0].is_archived) {
+      return res.status(400).json({ error: 'Batch is not archived' });
+    }
+
+    const result = await pool.query(
+      'UPDATE batches SET is_archived = FALSE WHERE id = $1 RETURNING *',
+      [id]
+    );
+    res.json({ message: 'Batch restored', batch: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// Permanently delete a batch — super_admin only. This is a separate,
+// deliberately harder-to-reach action from archiving, since it's irreversible
+// and cascades to all students, attendance, and QR history.
+async function deleteBatch(req, res) {
+  const { id } = req.params;
+  try {
+    if (req.admin.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only a super admin can permanently delete a batch' });
+    }
+
+    const batchRes = await pool.query('SELECT id FROM batches WHERE id = $1', [id]);
+    if (batchRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+
+    await pool.query('DELETE FROM batches WHERE id = $1', [id]);
+    res.json({ message: 'Batch permanently deleted' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -98,19 +157,32 @@ async function updateBatchSettings(req, res) {
   }
 }
 // List batches — super_admin sees all, admin sees only assigned ones
+// List batches — super_admin sees all, admin sees only assigned ones.
+// Archived batches are excluded unless ?includeArchived=true is passed.
 async function listBatches(req, res) {
+  const includeArchived = req.query.includeArchived === 'true';
   try {
     let result;
     if (req.admin.role === 'super_admin') {
-      result = await pool.query('SELECT * FROM batches ORDER BY id');
+      result = includeArchived
+        ? await pool.query('SELECT * FROM batches ORDER BY id')
+        : await pool.query('SELECT * FROM batches WHERE is_archived = FALSE ORDER BY id');
     } else {
-      result = await pool.query(
-        `SELECT b.* FROM batches b
-         JOIN batch_admins ba ON ba.batch_id = b.id
-         WHERE ba.admin_id = $1
-         ORDER BY b.id`,
-        [req.admin.id]
-      );
+      result = includeArchived
+        ? await pool.query(
+            `SELECT b.* FROM batches b
+             JOIN batch_admins ba ON ba.batch_id = b.id
+             WHERE ba.admin_id = $1
+             ORDER BY b.id`,
+            [req.admin.id]
+          )
+        : await pool.query(
+            `SELECT b.* FROM batches b
+             JOIN batch_admins ba ON ba.batch_id = b.id
+             WHERE ba.admin_id = $1 AND b.is_archived = FALSE
+             ORDER BY b.id`,
+            [req.admin.id]
+          );
     }
     res.json({ batches: result.rows });
   } catch (err) {
@@ -118,7 +190,6 @@ async function listBatches(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
 // Super admin assigns/reassigns an admin to a batch
 async function assignAdminToBatch(req, res) {
   const { id } = req.params; // batch id
@@ -168,4 +239,13 @@ async function revokeAdminFromBatch(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { createBatch, deleteBatch, listBatches, assignAdminToBatch, revokeAdminFromBatch, updateBatchSettings };
+module.exports = {
+  createBatch,
+  deleteBatch,
+  archiveBatch,
+  restoreBatch,
+  listBatches,
+  assignAdminToBatch,
+  revokeAdminFromBatch,
+  updateBatchSettings,
+};

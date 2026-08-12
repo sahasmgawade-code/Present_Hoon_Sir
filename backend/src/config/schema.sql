@@ -15,6 +15,7 @@ CREATE TABLE batches (
   name VARCHAR(100) NOT NULL,
   created_by INTEGER REFERENCES admins(id) ON DELETE SET NULL,
   qr_validity_minutes INTEGER NOT NULL DEFAULT 5,
+  is_archived BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()
 );
 

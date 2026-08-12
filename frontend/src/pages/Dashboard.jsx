@@ -37,6 +37,7 @@ export default function Dashboard() {
   }
   const [batches, setBatches] = useState([]);
   const [batchId, setBatchId] = useSelectedBatch();
+  const [showArchived, setShowArchived] = useState(false);
   const [today, setToday] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,7 @@ export default function Dashboard() {
   const selectedBatch = batches.find((b) => b.id === batchId);
   const canDeleteBatch = isSuperAdmin || selectedBatch?.created_by === admin?.id;
   useEffect(() => {
-    api.listBatches()
+    api.listBatches(showArchived)
       .then((data) => {
         setBatches(data.batches);
         const stillValid = data.batches.some((b) => b.id === batchId);
@@ -58,7 +59,7 @@ export default function Dashboard() {
         setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showArchived]);
 
   const loadBatchData = useCallback(async (id) => {
     setLoading(true);
@@ -81,14 +82,24 @@ export default function Dashboard() {
     if (batchId) loadBatchData(batchId);
   }, [batchId, loadBatchData]);
 
-  async function handleDeleteBatch() {
+  async function handleArchiveBatch() {
     if (!batchId) return;
-    if (!window.confirm('Delete this batch permanently? This cannot be undone.')) return;
+    if (!window.confirm('Archive this batch? It will be hidden from your active batches, but all data (students, attendance, QR history) will be preserved. You can restore it anytime.')) return;
     try {
-      await api.deleteBatch(batchId);
-      const data = await api.listBatches();
+      await api.archiveBatch(batchId);
+      const data = await api.listBatches(showArchived);
       setBatches(data.batches);
       setBatchId(data.batches[0]?.id ?? null);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function handleRestoreBatch(id) {
+    try {
+      await api.restoreBatch(id);
+      const data = await api.listBatches(showArchived);
+      setBatches(data.batches);
     } catch (err) {
       alert(err.message);
     }
@@ -125,6 +136,16 @@ export default function Dashboard() {
             className="px-3 py-2 text-sm font-medium rounded glass-btn bg-forestGlass text-white hover:bg-forestGlass/70 transition-colors"
           >
             + Add Batch
+          </button>
+          <button
+            onClick={() => setShowArchived((v) => !v)}
+            className={`px-3 py-2 text-sm font-medium rounded border transition-colors ${
+              showArchived
+                ? 'border-forest bg-forestGlass text-white'
+                : 'border-rule text-ink/70 hover:bg-ink/5'
+            }`}
+          >
+            {showArchived ? 'Showing All' : 'Show Archived'}
           </button>
         </div>
       </div>
@@ -196,12 +217,20 @@ export default function Dashboard() {
           <div className="perforated pt-6 mt-10">
             <p className="text-xs font-mono uppercase tracking-wide text-brick mb-3">Danger Zone</p>
             <div className="flex flex-wrap gap-3">
-              {canDeleteBatch && (
+              {canDeleteBatch && selectedBatch && !selectedBatch.is_archived && (
                 <button
-                  onClick={handleDeleteBatch}
+                  onClick={handleArchiveBatch}
                   className="glass-btn px-4 py-2 text-sm font-medium rounded border border-brick text-brick hover:bg-brickGlass hover:text-white transition-colors"
                 >
-                  Delete Batch
+                  Archive Batch
+                </button>
+              )}
+              {canDeleteBatch && selectedBatch && selectedBatch.is_archived && (
+                <button
+                  onClick={() => handleRestoreBatch(selectedBatch.id)}
+                  className="glass-btn px-4 py-2 text-sm font-medium rounded border border-forest text-forest hover:bg-forestGlass hover:text-white transition-colors"
+                >
+                  Restore Batch
                 </button>
               )}
               <button

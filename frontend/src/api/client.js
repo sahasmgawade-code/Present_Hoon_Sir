@@ -59,9 +59,12 @@ export const api = {
     request(`/admins/${id}/notifications`, { method: 'PATCH', body: { enabled } }),
   toggleAdminSmsNotifications: (id, enabled) =>
     request(`/admins/${id}/sms-notifications`, { method: 'PATCH', body: { enabled } }),
-  listBatches: () => request('/batches'),
+  listBatches: (includeArchived = false) =>
+    request(`/batches${includeArchived ? '?includeArchived=true' : ''}`),
   createBatch: (name, collaboratorIds = []) =>
     request('/batches', { method: 'POST', body: { name, collaboratorIds } }),
+  archiveBatch: (id) => request(`/batches/${id}/archive`, { method: 'PATCH' }),
+  restoreBatch: (id) => request(`/batches/${id}/restore`, { method: 'PATCH' }),
   deleteBatch: (id) => request(`/batches/${id}`, { method: 'DELETE' }),
   updateBatchSettings: (id, qrValidityMinutes) =>
     request(`/batches/${id}/settings`, { method: 'PATCH', body: { qrValidityMinutes } }),
