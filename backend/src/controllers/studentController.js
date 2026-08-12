@@ -10,7 +10,29 @@ async function canAccessBatch(admin, batchId) {
   return result.rows.length > 0;
 }
 
-// Add a student to a batch
+// Get a single student by ID (batch is looked up server-side, not required from the client)
+async function getStudentById(req, res) {
+  const { studentId } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at
+       FROM students WHERE id = $1`,
+      [studentId]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
+
+    const student = result.rows[0];
+    if (!(await canAccessBatch(req.admin, student.batch_id))) {
+      return res.status(403).json({ error: 'No access to this batch' });
+    }
+
+    res.json({ student });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
 // Add a student to a batch
 async function addStudent(req, res) {
   const { batchId } = req.params;
@@ -219,4 +241,4 @@ async function setStudentCredentials(req, res) {
   }
 }
 
-module.exports = { addStudent, listStudents, updateStudent, deleteStudent, setBlacklist, setStudentCredentials };
+module.exports = { addStudent, listStudents, updateStudent, deleteStudent, setBlacklist, setStudentCredentials, getStudentById };

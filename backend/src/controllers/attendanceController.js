@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { sendEmail } = require('../utils/mailer');
 const { sendSMS } = require('../utils/smsSender');
+const { escapeHtml } = require('../utils/htmlEscape');
 // Email every eligible admin, and SMS parents, when a student is newly marked absent
 async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
   try {
@@ -37,10 +38,10 @@ async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
       const studentName = `${student.first_name} ${student.last_name}`;
       const html = `
         <h2>Attendance Update — PHS-AMS</h2>
-        <p><strong>Student:</strong> ${studentName}</p>
+        <p><strong>Student:</strong> ${escapeHtml(studentName)}</p>
         <p><strong>Status:</strong> Absent</p>
-        <p><strong>Date:</strong> ${date}</p>
-        <p><strong>Batch:</strong> ${batchName}</p>
+        <p><strong>Date:</strong> ${escapeHtml(date)}</p>
+        <p><strong>Batch:</strong> ${escapeHtml(batchName)}</p>
       `;
 
       for (const recipient of recipientsRes.rows) {

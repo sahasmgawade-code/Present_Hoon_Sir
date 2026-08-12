@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const pool = require('../config/db');
-
+const { getTodayIST } = require('../utils/dateUtils');
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const DEFAULT_SESSION_MINUTES = 5; // fallback if a batch somehow has no value set
 
@@ -86,6 +86,20 @@ async function submitAttendance(req, res) {
       return res.status(409).json({ error: 'This device has already submitted attendance for this session' });
     }
 
+    // anti-proxy cooldown: this device may submit at most 2 times (across any
+    // sessions/batches) within a rolling 15-minute window
+    const cooldown = await pool.query(
+      `SELECT COUNT(*) AS count FROM qr_submissions
+       WHERE device_token = $1 AND submitted_at > now() - interval '15 minutes'`,
+      [deviceToken]
+    );
+    const recentSubmissions = parseInt(cooldown.rows[0].count, 10);
+    if (recentSubmissions >= 2) {
+      return res.status(429).json({
+        error: 'This device has submitted attendance too many times recently. Please wait a few minutes and try again.',
+      });
+    }
+
     // match student by urn, within the correct batch
     const studentRes = await pool.query(
       `SELECT * FROM students WHERE urn = $1 AND batch_id = $2`,
@@ -108,8 +122,7 @@ async function submitAttendance(req, res) {
       [session.id, student.id, deviceToken, firstName.trim(), lastName.trim()]
     );
     // upsert attendance for today (in IST, not server UTC)
-    const nowIst = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-    const today = nowIst.toISOString().slice(0, 10);
+    const today = getTodayIST();
     await pool.query(
       `INSERT INTO attendance (student_id, batch_id, date, qr_session_id, status, method)
        VALUES ($1, $2, $3, $4, 'present', 'qr')

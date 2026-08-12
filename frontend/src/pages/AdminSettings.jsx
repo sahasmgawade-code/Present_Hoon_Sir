@@ -289,7 +289,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Delete */}
-      {!isSuperAdmin && (
+      {!isSuperAdmin && adminId !== currentAdmin?.id && (
         <div className="bg-card border border-brick/40 rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap perforated">
           <div>
             <h2 className="font-display text-xl text-brick">Danger Zone</h2>

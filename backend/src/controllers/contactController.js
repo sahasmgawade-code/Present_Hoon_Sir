@@ -1,4 +1,5 @@
 const { sendEmail } = require('../utils/mailer');
+const { escapeHtml } = require('../utils/htmlEscape');
 async function submitContactForm(req, res) {
   const { name, email, phone, organization, message } = req.body;
 
@@ -12,12 +13,12 @@ async function submitContactForm(req, res) {
       subject: `New Contact Enquiry from ${name}`,
       html: `
         <h2>New Contact Us Submission — PHS-AMS</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Organization:</strong> ${organization || '-'}</p>
+        <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(phone)}</p>
+        <p><strong>Organization:</strong> ${escapeHtml(organization || '-')}</p>
         <p><strong>Message:</strong></p>
-        <p>${(message || '-').replace(/\n/g, '<br/>')}</p>
+        <p>${escapeHtml(message || '-').replace(/\n/g, '<br/>')}</p>
       `,
     });
 

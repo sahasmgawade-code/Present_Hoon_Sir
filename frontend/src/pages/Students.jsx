@@ -247,7 +247,6 @@ export default function Students() {
               </div>
               <Link
                 to={`/students/${s.id}/settings`}
-                state={{ batchId }}
                 className="p-2 rounded border border-rule text-ink/70 hover:bg-ink/5 transition-colors shrink-0"
                 aria-label={`Settings for ${s.first_name} ${s.last_name}`}
               >

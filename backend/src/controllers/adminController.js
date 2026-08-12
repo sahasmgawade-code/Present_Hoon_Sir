@@ -67,6 +67,9 @@ async function deleteAdmin(req, res) {
     if (target.rows[0].role === 'super_admin') {
       return res.status(403).json({ error: 'Cannot delete a super admin' });
     }
+    if (Number(id) === req.admin.id) {
+      return res.status(403).json({ error: 'You cannot delete your own account while logged in' });
+    }
 
     await pool.query('DELETE FROM admins WHERE id = $1', [id]);
     res.json({ message: 'Admin deleted' });

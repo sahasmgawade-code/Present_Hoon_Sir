@@ -80,6 +80,8 @@ export default function ScanAttendance() {
     } catch (err) {
       if (err.status === 410) {
         setStatus('expired');
+      } else if (err.status === 429) {
+        setSubmitError('This device has marked attendance too many times recently. Please wait a few minutes and try again, or ask your instructor for help.');
       } else {
         setSubmitError(err.message || 'Something went wrong. Try again.');
       }
@@ -115,7 +117,7 @@ export default function ScanAttendance() {
             <div className="text-center space-y-2">
               <p className="font-display text-xl text-brick">This code has expired</p>
               <p className="text-sm text-ink/60">
-                QR codes are only valid for 5 minutes. Ask your instructor to generate a new one.
+                This QR code's time window has passed. Ask your instructor to generate a new one.
               </p>
             </div>
           )}

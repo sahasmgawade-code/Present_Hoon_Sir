@@ -1,12 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../api/client.js';
 import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
-function todayLocal() {
-  const d = new Date();
-  const offset = d.getTimezoneOffset();
-  const local = new Date(d.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 10);
-}
+import { todayIST } from '../utils/date.js';
 
 function StatusToggle({ status, onChange }) {
   const isPresent = status === 'present';
@@ -53,7 +48,7 @@ function StatusToggle({ status, onChange }) {
 export default function EditAttendance() {
   const [batches, setBatches] = useState([]);
   const [batchId, setBatchId] = useSelectedBatch();
-  const [date, setDate] = useState(todayLocal());
+  const [date, setDate] = useState(todayIST());
   const [rows, setRows] = useState([]); // [{ student_id, urn, first_name, last_name, status, method }]
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -145,7 +140,7 @@ export default function EditAttendance() {
           <input
             type="date"
             value={date}
-            max={todayLocal()}
+            max={todayIST()}
             onChange={(e) => setDate(e.target.value)}
             className="border border-rule rounded px-3 py-2 bg-card font-medium"
           />

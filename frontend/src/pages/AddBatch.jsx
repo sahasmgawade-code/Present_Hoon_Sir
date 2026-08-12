@@ -6,7 +6,10 @@ import { api } from '../api/client.js';
 function splitName(full) {
   const parts = String(full || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { firstName: '', lastName: '' };
-  if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] };
+  // Single-word name (e.g. "Madonna"): don't duplicate it into lastName —
+  // that would silently show up as "Madonna Madonna" everywhere. Use a
+  // clear placeholder instead so it's obviously not a real surname.
+  if (parts.length === 1) return { firstName: parts[0], lastName: '—' };
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 

@@ -6,9 +6,7 @@ import AttendancePie from '../components/AttendancePie.jsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayIST } from '../utils/date.js';
 
 const PHS_BRAND = {
   bg: [35, 79, 56],       // #234F38 forestDark
@@ -288,7 +286,7 @@ export default function Reports() {
     try {
       const [reportData, todayData] = await Promise.all([
         api.getBatchReport(id),
-        api.getAttendanceForDate(id, todayStr()),
+        api.getAttendanceForDate(id, todayIST()),
       ]);
       setReport(reportData);
       setToday(todayData);
@@ -570,7 +568,7 @@ function buildExcelWorkbook(matrixData) {
               <input
                 type="date"
                 value={rangeStart}
-                max={todayStr()}
+                max={todayIST()}
                 onChange={(e) => setRangeStart(e.target.value)}
                 className="border border-rule rounded px-3 py-2 bg-paper font-medium"
               />
@@ -578,7 +576,7 @@ function buildExcelWorkbook(matrixData) {
               <input
                 type="date"
                 value={rangeEnd}
-                max={todayStr()}
+                max={todayIST()}
                 onChange={(e) => setRangeEnd(e.target.value)}
                 className="border border-rule rounded px-3 py-2 bg-paper font-medium"
               />

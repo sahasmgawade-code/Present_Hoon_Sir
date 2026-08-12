@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayIST } from '../utils/date.js';
 export default function Dashboard() {
-  const { logout } = useAuth();
+  const { logout, admin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
   const [showPwForm, setShowPwForm] = useState(false);
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -43,6 +41,8 @@ export default function Dashboard() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const selectedBatch = batches.find((b) => b.id === batchId);
+  const canDeleteBatch = isSuperAdmin || selectedBatch?.created_by === admin?.id;
   useEffect(() => {
     api.listBatches()
       .then((data) => {
@@ -65,7 +65,7 @@ export default function Dashboard() {
     setError('');
     try {
       const [todayData, reportData] = await Promise.all([
-        api.getAttendanceForDate(id, todayStr()),
+        api.getAttendanceForDate(id, todayIST()),
         api.getBatchReport(id),
       ]);
       setToday(todayData);
@@ -196,12 +196,14 @@ export default function Dashboard() {
           <div className="perforated pt-6 mt-10">
             <p className="text-xs font-mono uppercase tracking-wide text-brick mb-3">Danger Zone</p>
             <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleDeleteBatch}
-                className="glass-btn px-4 py-2 text-sm font-medium rounded border border-brick text-brick hover:bg-brickGlass hover:text-white transition-colors"
-              >
-                Delete Batch
-              </button>
+              {canDeleteBatch && (
+                <button
+                  onClick={handleDeleteBatch}
+                  className="glass-btn px-4 py-2 text-sm font-medium rounded border border-brick text-brick hover:bg-brickGlass hover:text-white transition-colors"
+                >
+                  Delete Batch
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowPwForm((v) => !v);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 
 const fields = [
@@ -14,9 +14,7 @@ const fields = [
 export default function StudentSettings() {
   const { id } = useParams();
   const studentId = Number(id);
-  const location = useLocation();
   const navigate = useNavigate();
-  const batchId = location.state?.batchId;
 
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,34 +33,25 @@ export default function StudentSettings() {
   const [savingCred, setSavingCred] = useState(false);
 
   useEffect(() => {
-    if (!batchId) {
-      setError('Missing batch context.');
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError('');
-    api.listStudents(batchId)
+    api.getStudent(studentId)
       .then((data) => {
-        const found = data.students.find((s) => s.id === studentId);
-        if (!found) {
-          setError('Student not found.');
-        } else {
-          setStudent(found);
-          setCredLoginId(found.login_id || '');
-          setForm({
-            urn: found.urn,
-            firstName: found.first_name,
-            lastName: found.last_name,
-            phone: found.phone || '',
-            email: found.email || '',
-            parentPhone: found.parent_phone || '',
-          });
-        }
+        const found = data.student;
+        setStudent(found);
+        setCredLoginId(found.login_id || '');
+        setForm({
+          urn: found.urn,
+          firstName: found.first_name,
+          lastName: found.last_name,
+          phone: found.phone || '',
+          email: found.email || '',
+          parentPhone: found.parent_phone || '',
+        });
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [batchId, studentId]);
+  }, [studentId]);
 
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));

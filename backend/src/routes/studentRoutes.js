@@ -7,6 +7,7 @@ const {
   deleteStudent,
   setBlacklist,
   setStudentCredentials,
+  getStudentById,
 } = require('../controllers/studentController');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
@@ -14,9 +15,10 @@ router.use(verifyToken);
 
 router.get('/batch/:batchId', listStudents);
 router.post('/batch/:batchId', addStudent);
+router.get('/:studentId', getStudentById);
 router.put('/:studentId', updateStudent);
 router.delete('/:studentId', deleteStudent);
-router.patch('/:studentId/blacklist', requireRole('super_admin', 'admin'), setBlacklist);
+router.patch('/:studentId/blacklist', setBlacklist);
 router.patch('/:studentId/credentials', setStudentCredentials);
 
 module.exports = router;
