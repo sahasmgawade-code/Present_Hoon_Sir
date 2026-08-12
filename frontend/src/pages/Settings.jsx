@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function Settings() {
   const { theme, toggleTheme } = useTheme();
+  const { isSuperAdmin } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -15,11 +17,15 @@ export default function Settings() {
   const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
+    if (isSuperAdmin) {
+      setProfileLoading(false);
+      return;
+    }
     api.getOwnProfile()
       .then((data) => setProfile(data.admin))
       .catch((err) => setProfileError(err.message || 'Could not load profile.'))
       .finally(() => setProfileLoading(false));
-  }, []);
+  }, [isSuperAdmin]);
 
   async function handleChangePassword(e) {
     e.preventDefault();
@@ -116,8 +122,9 @@ export default function Settings() {
         </button>
       </form>
 
-      {/* Notification status (read-only) */}
-      {profileLoading ? (
+      {/* Notification status (read-only) — not shown for super admins, who
+          manage this from the Manage Admins page instead */}
+      {isSuperAdmin ? null : profileLoading ? (
         <p className="text-ink/50 font-mono text-sm">Loading notification settings…</p>
       ) : profileError ? (
         <p className="text-sm text-brick font-medium">{profileError}</p>
