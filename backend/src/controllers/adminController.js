@@ -3,11 +3,16 @@ const pool = require('../config/db');
 
 // Super Admin creates a new admin (role: 'admin')
 async function createAdmin(req, res) {
-  const { name, email, password } = req.body;
+  const { name, email, password, emailNotificationsEnabled, smsNotificationsEnabled } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
   }
+
+  // Both notification flags default to true (matching the DB column defaults)
+  // unless explicitly set to false at creation time.
+  const emailEnabled = emailNotificationsEnabled !== false;
+  const smsEnabled = smsNotificationsEnabled !== false;
 
   try {
     const existing = await pool.query('SELECT id FROM admins WHERE email = $1', [email]);
@@ -17,10 +22,10 @@ async function createAdmin(req, res) {
 
     const hash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      `INSERT INTO admins (name, email, password_hash, role)
-       VALUES ($1, $2, $3, 'admin')
-       RETURNING id, name, email, role`,
-      [name, email, hash]
+      `INSERT INTO admins (name, email, password_hash, role, email_notifications_enabled, sms_notifications_enabled)
+       VALUES ($1, $2, $3, 'admin', $4, $5)
+       RETURNING id, name, email, role, email_notifications_enabled, sms_notifications_enabled`,
+      [name, email, hash, emailEnabled, smsEnabled]
     );
 
     res.status(201).json({ admin: result.rows[0] });

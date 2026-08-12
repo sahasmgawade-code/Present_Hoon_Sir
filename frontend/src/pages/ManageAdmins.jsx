@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-
-const emptyForm = { name: '', email: '', password: '' };
-
+const emptyForm = { name: '', email: '', password: '', emailNotificationsEnabled: true, smsNotificationsEnabled: true };
 function GearIcon({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -40,6 +38,10 @@ export default function ManageAdmins() {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
 
+  function toggleFormFlag(field) {
+    setForm((f) => ({ ...f, [field]: !f[field] }));
+  }
+
   async function handleCreate(e) {
     e.preventDefault();
     setAddError('');
@@ -59,6 +61,8 @@ export default function ManageAdmins() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
+        emailNotificationsEnabled: form.emailNotificationsEnabled,
+        smsNotificationsEnabled: form.smsNotificationsEnabled,
       });
       setForm(emptyForm);
       setShowAddForm(false);
@@ -143,6 +147,54 @@ export default function ManageAdmins() {
                 className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
               />
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-6 pt-1">
+            <label className="flex items-center gap-3 text-sm cursor-pointer">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.emailNotificationsEnabled}
+                onClick={() => toggleFormFlag('emailNotificationsEnabled')}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-all shrink-0"
+                style={{
+                  background: form.emailNotificationsEnabled
+                    ? 'linear-gradient(to right, #5DCAA5, #378ADD)'
+                    : 'linear-gradient(to right, #D85A30, #E24B4A)',
+                }}
+              >
+                <span
+                  className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white transition-all duration-200 ${
+                    form.emailNotificationsEnabled ? 'left-[calc(100%-22px)]' : 'left-[2px]'
+                  }`}
+                  style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
+                />
+              </button>
+              <span className="text-ink/70">Email notifications</span>
+            </label>
+
+            <label className="flex items-center gap-3 text-sm cursor-pointer">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={form.smsNotificationsEnabled}
+                onClick={() => toggleFormFlag('smsNotificationsEnabled')}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-all shrink-0"
+                style={{
+                  background: form.smsNotificationsEnabled
+                    ? 'linear-gradient(to right, #5DCAA5, #378ADD)'
+                    : 'linear-gradient(to right, #D85A30, #E24B4A)',
+                }}
+              >
+                <span
+                  className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 rounded-full bg-white transition-all duration-200 ${
+                    form.smsNotificationsEnabled ? 'left-[calc(100%-22px)]' : 'left-[2px]'
+                  }`}
+                  style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
+                />
+              </button>
+              <span className="text-ink/70">SMS notifications</span>
+            </label>
           </div>
 
           {addError && <p className="text-sm text-brick font-medium">{addError}</p>}
