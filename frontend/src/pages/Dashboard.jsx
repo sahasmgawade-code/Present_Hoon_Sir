@@ -5,36 +5,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
 import { todayIST } from '../utils/date.js';
 export default function Dashboard() {
-  const { logout, admin, isSuperAdmin } = useAuth();
+  const { admin, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
-  const [showPwForm, setShowPwForm] = useState(false);
-  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [pwError, setPwError] = useState('');
-  const [pwSuccess, setPwSuccess] = useState('');
-  const [pwSaving, setPwSaving] = useState(false);
-
-  async function handleChangePassword(e) {
-    e.preventDefault();
-    setPwError('');
-    setPwSuccess('');
-
-    if (pwForm.newPassword !== pwForm.confirmPassword) {
-      setPwError('New password and confirmation do not match.');
-      return;
-    }
-
-    setPwSaving(true);
-    try {
-      await api.changePassword(pwForm.currentPassword, pwForm.newPassword);
-      setPwSuccess('Password updated.');
-      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setShowPwForm(false), 1500);
-    } catch (err) {
-      setPwError(err.message || 'Could not update password.');
-    } finally {
-      setPwSaving(false);
-    }
-  }
   const [batches, setBatches] = useState([]);
   const [batchId, setBatchId] = useSelectedBatch();
   const [showArchived, setShowArchived] = useState(false);
@@ -233,75 +205,7 @@ export default function Dashboard() {
                   Restore Batch
                 </button>
               )}
-              <button
-                onClick={() => {
-                  setShowPwForm((v) => !v);
-                  setPwError('');
-                  setPwSuccess('');
-                }}
-                className="px-4 py-2 text-sm font-medium rounded border border-rule text-ink/70 hover:bg-ink/5 transition-colors"
-              >
-                {showPwForm ? 'Close' : 'Change Password'}
-              </button>
-              <button
-                onClick={logout}
-                className="px-4 py-2 text-sm font-medium rounded border border-rule text-ink/70 hover:bg-ink/5 transition-colors"
-              >
-                Log Out
-              </button>
-            </div>
-
-            {showPwForm && (
-              <form onSubmit={handleChangePassword} className="mt-4 bg-card border border-rule rounded-lg p-5 max-w-sm space-y-3">
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
-                    Current Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={pwForm.currentPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, currentPassword: e.target.value }))}
-                    className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
-                    New Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={pwForm.newPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, newPassword: e.target.value }))}
-                    className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
-                    Confirm New Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={pwForm.confirmPassword}
-                    onChange={(e) => setPwForm((f) => ({ ...f, confirmPassword: e.target.value }))}
-                    className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
-                  />
-                </div>
-                {pwError && <p className="text-sm text-brick font-medium">{pwError}</p>}
-                {pwSuccess && <p className="text-sm text-forest font-medium">{pwSuccess}</p>}
-                <button
-                  type="submit"
-                  disabled={pwSaving}
-                  className="glass-btn bg-forestGlass text-white rounded px-5 py-2 font-medium hover:bg-forestGlass/70 transition-colors disabled:opacity-60"
-                >
-                  {pwSaving ? 'Saving…' : 'Update Password'}
-                </button>
-              </form>
-            )}
+              </div>
           </div>
         </>
       )}

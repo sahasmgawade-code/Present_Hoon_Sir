@@ -52,6 +52,7 @@ export const api = {
   submitContact: (payload) => request('/contact', { method: 'POST', body: payload }),
   listAdminsBasic: () => request('/admins/basic'),
   getAdminBatchAccess: (adminId) => request(`/admins/${adminId}/batches`),
+  getOwnProfile: () => request('/admins/me'),
   createAdmin: (payload) => request('/admins', { method: 'POST', body: payload }),
   updateAdmin: (id, name) => request(`/admins/${id}`, { method: 'PUT', body: { name } }),
   deleteAdmin: (id) => request(`/admins/${id}`, { method: 'DELETE' }),

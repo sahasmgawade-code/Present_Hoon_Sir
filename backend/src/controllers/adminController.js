@@ -35,6 +35,24 @@ async function createAdmin(req, res) {
   }
 }
 
+// Any authenticated admin can view their own profile — used for the Settings page
+async function getOwnProfile(req, res) {
+  try {
+    const result = await pool.query(
+      `SELECT id, name, email, role, email_notifications_enabled, sms_notifications_enabled
+       FROM admins WHERE id = $1`,
+      [req.admin.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    res.json({ admin: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
 // Super Admin renames any admin (including themself)
 async function updateAdmin(req, res) {
   const { id } = req.params;
@@ -185,4 +203,4 @@ async function toggleSmsNotifications(req, res) {
   }
 }
 
-module.exports = { createAdmin, updateAdmin, deleteAdmin, listAdmins, listAdminsBasic, getAdminBatchAccess, toggleEmailNotifications, toggleSmsNotifications };
+module.exports = { createAdmin, updateAdmin, deleteAdmin, listAdmins, listAdminsBasic, getAdminBatchAccess, toggleEmailNotifications, toggleSmsNotifications, getOwnProfile };

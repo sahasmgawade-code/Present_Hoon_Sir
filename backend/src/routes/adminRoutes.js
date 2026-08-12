@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { createAdmin, updateAdmin, deleteAdmin, listAdmins, listAdminsBasic, getAdminBatchAccess, toggleEmailNotifications, toggleSmsNotifications } = require('../controllers/adminController');
+const { createAdmin, updateAdmin, deleteAdmin, listAdmins, listAdminsBasic, getAdminBatchAccess, toggleEmailNotifications, toggleSmsNotifications, getOwnProfile } = require('../controllers/adminController');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
-// Any authenticated admin can call this — used for the batch-collaborator picker
+// Any authenticated admin can call these
 router.get('/basic', verifyToken, listAdminsBasic);
+router.get('/me', verifyToken, getOwnProfile);
 
 // Everything below requires super_admin
 router.use(verifyToken, requireRole('super_admin'));
