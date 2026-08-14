@@ -11,17 +11,8 @@ async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
     const batchName = batchRes.rows[0]?.name || `Batch #${batchId}`;
 
     const studentsRes = await pool.query(
-      `SELECT id, first_name, last_name, parent_phone FROM students WHERE id = ANY($1::int[])`,
+      `SELECT id, first_name, last_name, email, parent_phone FROM students WHERE id = ANY($1::int[])`,
       [studentIds]
-    );
-
-    const recipientsRes = await pool.query(
-      `SELECT DISTINCT a.email, a.name
-       FROM admins a
-       LEFT JOIN batch_admins ba ON ba.admin_id = a.id AND ba.batch_id = $1
-       WHERE a.email_notifications_enabled = true
-         AND (a.role = 'super_admin' OR ba.admin_id IS NOT NULL)`,
-      [batchId]
     );
 
     // SMS is only sent if the admin who marked attendance has SMS notifications enabled
@@ -32,7 +23,7 @@ async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
     );
     const smsAllowed = actingAdminRes.rows[0]?.sms_notifications_enabled === true;
 
-    if (recipientsRes.rows.length === 0 && !smsAllowed) return;
+    // Emails now go to the student directly, so admin recipients are no longer required to proceed
 
     for (const student of studentsRes.rows) {
       const studentName = `${student.first_name} ${student.last_name}`;
@@ -44,12 +35,12 @@ async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
         <p><strong>Batch:</strong> ${escapeHtml(batchName)}</p>
       `;
 
-      for (const recipient of recipientsRes.rows) {
+      if (student.email) {
         sendEmail({
-          to: recipient.email,
+          to: student.email,
           subject: `Absent: ${studentName} — ${batchName} (${date})`,
           html,
-        }).catch((err) => console.error(`Failed to email ${recipient.email}:`, err.message));
+        }).catch((err) => console.error(`Failed to email ${student.email}:`, err.message));
       }
 
       if (smsAllowed && student.parent_phone) {
@@ -133,6 +124,11 @@ async function saveAttendanceForDate(req, res) {
 
       for (const r of records) {
         if (!['present', 'absent'].includes(r.status)) continue;
+
+        // Skip records whose status is unchanged — this preserves the existing
+        // method (e.g. 'qr') instead of overwriting the whole batch to 'manual'.
+        const hadExisting = prevStatus.has(r.studentId);
+        if (hadExisting && prevStatus.get(r.studentId) === r.status) continue;
 
         await client.query(
           `INSERT INTO attendance (student_id, batch_id, date, status, method, marked_at)
