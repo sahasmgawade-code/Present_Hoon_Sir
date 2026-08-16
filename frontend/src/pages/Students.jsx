@@ -103,6 +103,7 @@ export default function Students() {
   const [error, setError] = useState('');
 
   const [search, setSearch] = useState('');
+  const [batchFilter, setBatchFilter] = useState('all'); // 'all' | 'unassigned' | batchId as string
   const [showAddForm, setShowAddForm] = useState(false);
   const [addError, setAddError] = useState('');
 
@@ -127,13 +128,29 @@ export default function Students() {
     loadStudents();
   }, [loadStudents]);
 
+  const batchOptions = useMemo(() => {
+    const seen = new Map();
+    for (const s of students) {
+      if (s.batch_id && !seen.has(s.batch_id)) seen.set(s.batch_id, s.batch_name);
+    }
+    return Array.from(seen.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [students]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return students;
-    return students.filter((s) =>
-      `${s.first_name} ${s.last_name} ${s.urn}`.toLowerCase().includes(q)
-    );
-  }, [students, search]);
+    return students.filter((s) => {
+      const matchesSearch = !q || `${s.first_name} ${s.last_name} ${s.urn}`.toLowerCase().includes(q);
+      const matchesBatch =
+        batchFilter === 'all'
+          ? true
+          : batchFilter === 'unassigned'
+          ? !s.batch_id
+          : String(s.batch_id) === batchFilter;
+      return matchesSearch && matchesBatch;
+    });
+  }, [students, search, batchFilter]);
 
   async function handleAdd(form) {
     setAddError('');
@@ -175,13 +192,26 @@ export default function Students() {
       {error && <p className="text-brick font-medium">{error}</p>}
 
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Search by name or URN…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border border-rule rounded px-3 py-2 bg-card w-full sm:w-72 focus-visible:outline-forest"
-        />
+        <div className="flex flex-wrap gap-3 flex-1 min-w-0">
+          <input
+            type="text"
+            placeholder="Search by name or URN…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border border-rule rounded px-3 py-2 bg-card w-full sm:w-72 focus-visible:outline-forest"
+          />
+          <select
+            value={batchFilter}
+            onChange={(e) => setBatchFilter(e.target.value)}
+            className="border border-rule rounded px-3 py-2 bg-card font-medium focus-visible:outline-forest"
+          >
+            <option value="all">All batches</option>
+            <option value="unassigned">Not assigned</option>
+            {batchOptions.map((b) => (
+              <option key={b.id} value={String(b.id)}>{b.name}</option>
+            ))}
+          </select>
+        </div>
         <button
           onClick={() => {
             setShowAddForm((v) => !v);
@@ -209,7 +239,7 @@ export default function Students() {
       ) : filtered.length === 0 ? (
         <div className="bg-card border border-rule rounded-lg p-10 text-center">
           <p className="text-sm text-ink/50">
-            {students.length === 0 ? 'No students yet.' : 'No students match your search.'}
+            {students.length === 0 ? 'No students yet.' : 'No students match your search or filter.'}
           </p>
         </div>
       ) : (
