@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-const emptyForm = { name: '', email: '', password: '', emailNotificationsEnabled: true, smsNotificationsEnabled: true };
+const emptyForm = { name: '', email: '', emailNotificationsEnabled: true, smsNotificationsEnabled: true };
 function GearIcon({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -46,12 +46,8 @@ export default function ManageAdmins() {
     e.preventDefault();
     setAddError('');
 
-    if (!form.name.trim() || !form.email.trim() || !form.password) {
-      setAddError('Name, email, and password are required.');
-      return;
-    }
-    if (form.password.length < 8) {
-      setAddError('Password must be at least 8 characters.');
+    if (!form.name.trim() || !form.email.trim()) {
+      setAddError('Name and email are required.');
       return;
     }
 
@@ -60,7 +56,6 @@ export default function ManageAdmins() {
       await api.createAdmin({
         name: form.name.trim(),
         email: form.email.trim(),
-        password: form.password,
         emailNotificationsEnabled: form.emailNotificationsEnabled,
         smsNotificationsEnabled: form.smsNotificationsEnabled,
       });
@@ -130,20 +125,6 @@ export default function ManageAdmins() {
                 required
                 value={form.email}
                 onChange={update('email')}
-                className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={form.password}
-                onChange={update('password')}
-                placeholder="At least 8 characters"
                 className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
               />
             </div>

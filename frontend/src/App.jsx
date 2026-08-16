@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
+import SetPassword from './pages/SetPassword.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import AddBatch from './pages/AddBatch.jsx';
 import GenerateQr from './pages/GenerateQr.jsx';
@@ -32,6 +33,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/set-password/:token" element={<SetPassword />} />
       <Route path="/scan/:token" element={<ScanAttendance />} />
       <Route path="/student/login" element={<StudentLogin />} />
       <Route path="/student/portal" element={<StudentProtectedRoute><StudentPortal /></StudentProtectedRoute>} />
