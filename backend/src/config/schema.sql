@@ -3,10 +3,12 @@ CREATE TABLE admins (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255),
   role VARCHAR(20) NOT NULL CHECK (role IN ('super_admin', 'admin')),
   email_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
   sms_notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+  password_reset_token VARCHAR(255),
+  password_reset_expires TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
 -- Batches

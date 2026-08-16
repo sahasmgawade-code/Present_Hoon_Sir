@@ -1,16 +1,22 @@
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const pool = require('../config/db');
+const { sendEmail } = require('../utils/mailer');
+const { escapeHtml } = require('../utils/htmlEscape');
 
-// Super Admin creates a new admin (role: 'admin')
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const RESET_TOKEN_TTL_HOURS = 24;
+
+// Super Admin creates a new admin (role: 'admin').
+// No password is collected here — an email is sent with a link
+// so the new admin can create their own password.
 async function createAdmin(req, res) {
-  const { name, email, password, emailNotificationsEnabled, smsNotificationsEnabled } = req.body;
+  const { name, email, emailNotificationsEnabled, smsNotificationsEnabled } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Name, email, and password are required' });
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
   }
 
-  // Both notification flags default to true (matching the DB column defaults)
-  // unless explicitly set to false at creation time.
   const emailEnabled = emailNotificationsEnabled !== false;
   const smsEnabled = smsNotificationsEnabled !== false;
 
@@ -20,13 +26,38 @@ async function createAdmin(req, res) {
       return res.status(409).json({ error: 'Email already in use' });
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + RESET_TOKEN_TTL_HOURS * 60 * 60 * 1000);
+
     const result = await pool.query(
-      `INSERT INTO admins (name, email, password_hash, role, email_notifications_enabled, sms_notifications_enabled)
-       VALUES ($1, $2, $3, 'admin', $4, $5)
+      `INSERT INTO admins (name, email, password_hash, role, email_notifications_enabled, sms_notifications_enabled, password_reset_token, password_reset_expires)
+       VALUES ($1, $2, NULL, 'admin', $3, $4, $5, $6)
        RETURNING id, name, email, role, email_notifications_enabled, sms_notifications_enabled`,
-      [name, email, hash, emailEnabled, smsEnabled]
+      [name, email, emailEnabled, smsEnabled, resetToken, resetExpires]
     );
+
+    const setPasswordUrl = `${FRONTEND_URL}/set-password/${resetToken}`;
+
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Your PHS-AMS admin account has been created',
+        html: `
+          <h2>Welcome to PHS-AMS</h2>
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>An admin account has been created for you on the PHS Attendance Management System.</p>
+          <p>Click the link below to create your password and log in:</p>
+          <p><a href="${setPasswordUrl}">${setPasswordUrl}</a></p>
+          <p>This link expires in ${RESET_TOKEN_TTL_HOURS} hours.</p>
+        `,
+      });
+    } catch (mailErr) {
+      console.error('Failed to send admin invite email:', mailErr.message);
+      return res.status(201).json({
+        admin: result.rows[0],
+        warning: 'Admin created, but the invite email could not be sent.',
+      });
+    }
 
     res.status(201).json({ admin: result.rows[0] });
   } catch (err) {
