@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function splitName(full) {
   const parts = String(full || '').trim().split(/\s+/).filter(Boolean);
@@ -39,7 +40,7 @@ function parseRows(rawRows) {
 
 export default function AddBatch() {
   const navigate = useNavigate();
-
+  const { isSuperAdmin } = useAuth();
   const [name, setName] = useState('');
   const [collaborators, setCollaborators] = useState([]);
   const [selectedCollaboratorIds, setSelectedCollaboratorIds] = useState([]);
@@ -54,10 +55,11 @@ export default function AddBatch() {
   const [results, setResults] = useState(null);
 
   useEffect(() => {
+    if (!isSuperAdmin) return; // only super admins can set up collaborators
     api.listAdminsBasic()
       .then((data) => setCollaborators(data.admins))
       .catch((err) => setCollaboratorsError(err.message));
-  }, []);
+  }, [isSuperAdmin]);
 
   function toggleCollaborator(id) {
     setSelectedCollaboratorIds((prev) =>
@@ -206,36 +208,38 @@ export default function AddBatch() {
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
-            Collaborate With Other Admins
-          </label>
-          {collaboratorsError && <p className="text-sm text-brick">{collaboratorsError}</p>}
-          {collaborators.length === 0 ? (
-            <p className="text-sm text-ink/50">No other admins to add yet.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {collaborators.map((a) => (
-                <label
-                  key={a.id}
-                  className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded border cursor-pointer transition-colors ${
-                    selectedCollaboratorIds.includes(a.id)
-                      ? 'glass-btn border-forest bg-forestGlass text-white'
-                      : 'border-rule text-ink/70 hover:bg-white/20'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={selectedCollaboratorIds.includes(a.id)}
-                    onChange={() => toggleCollaborator(a.id)}
-                  />
-                  {a.name}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+        {isSuperAdmin && (
+          <div>
+            <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
+              Collaborate With Other Admins
+            </label>
+            {collaboratorsError && <p className="text-sm text-brick">{collaboratorsError}</p>}
+            {collaborators.length === 0 ? (
+              <p className="text-sm text-ink/50">No other admins to add yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {collaborators.map((a) => (
+                  <label
+                    key={a.id}
+                    className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded border cursor-pointer transition-colors ${
+                      selectedCollaboratorIds.includes(a.id)
+                        ? 'glass-btn border-forest bg-forestGlass text-white'
+                        : 'border-rule text-ink/70 hover:bg-white/20'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={selectedCollaboratorIds.includes(a.id)}
+                      onChange={() => toggleCollaborator(a.id)}
+                    />
+                    {a.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
