@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
-// Helper: check if req.admin can access a given batch
+
+// Helper: check if req.admin can access a given (non-null) batch
 async function canAccessBatch(admin, batchId) {
   if (admin.role === 'super_admin') return true;
   const result = await pool.query(
@@ -10,20 +11,44 @@ async function canAccessBatch(admin, batchId) {
   return result.rows.length > 0;
 }
 
-// Get a single student by ID (batch is looked up server-side, not required from the client)
+// Helper: are two admins "collaborators" — do they share access to at least one batch?
+async function isCollaboratorWith(adminId, otherAdminId) {
+  if (adminId === otherAdminId) return true;
+  const result = await pool.query(
+    `SELECT 1 FROM batch_admins ba1
+     JOIN batch_admins ba2 ON ba1.batch_id = ba2.batch_id
+     WHERE ba1.admin_id = $1 AND ba2.admin_id = $2
+     LIMIT 1`,
+    [adminId, otherAdminId]
+  );
+  return result.rows.length > 0;
+}
+
+// Helper: can req.admin access this specific student row (batch-assigned or not)?
+async function canAccessStudent(admin, student) {
+  if (admin.role === 'super_admin') return true;
+  if (student.batch_id) {
+    return canAccessBatch(admin, student.batch_id);
+  }
+  // Unassigned student: only visible to its creator, or the creator's collaborators
+  if (!student.created_by) return false;
+  return isCollaboratorWith(admin.id, student.created_by);
+}
+
+// Get a single student by ID
 async function getStudentById(req, res) {
   const { studentId } = req.params;
   try {
     const result = await pool.query(
-      `SELECT id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at
+      `SELECT id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at, created_by
        FROM students WHERE id = $1`,
       [studentId]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
 
     const student = result.rows[0];
-    if (!(await canAccessBatch(req.admin, student.batch_id))) {
-      return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canAccessStudent(req.admin, student))) {
+      return res.status(403).json({ error: 'No access to this student' });
     }
 
     res.json({ student });
@@ -33,9 +58,13 @@ async function getStudentById(req, res) {
   }
 }
 
-// Add a student to a batch
+// Add a student. batchId may come from the URL (bulk import into a specific
+// batch, via /students/batch/:batchId) or from the request body via the
+// generic /students endpoint — where it's optional. Omitting it leaves the
+// student unassigned (batch_id = NULL), visible only to its creator and
+// that creator's collaborators.
 async function addStudent(req, res) {
-  const { batchId } = req.params;
+  const batchId = req.params.batchId || req.body.batchId || null;
   const { urn, firstName, lastName, phone, email, parentPhone, confirmed } = req.body;
 
   if (!urn || !firstName || !lastName) {
@@ -43,19 +72,31 @@ async function addStudent(req, res) {
   }
 
   try {
-    if (!(await canAccessBatch(req.admin, batchId))) {
+    if (batchId && !(await canAccessBatch(req.admin, batchId))) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
 
     const normalizedUrn = urn.replace(/\s+/g, '').toUpperCase();
 
-    // Block only a true duplicate: same URN already in THIS batch
-    const existingInBatch = await pool.query(
-      'SELECT id FROM students WHERE urn = $1 AND batch_id = $2',
-      [normalizedUrn, batchId]
-    );
-    if (existingInBatch.rows.length > 0) {
-      return res.status(409).json({ error: 'This URN already exists in this batch' });
+    if (batchId) {
+      // Block only a true duplicate: same URN already in THIS batch
+      const existingInBatch = await pool.query(
+        'SELECT id FROM students WHERE urn = $1 AND batch_id = $2',
+        [normalizedUrn, batchId]
+      );
+      if (existingInBatch.rows.length > 0) {
+        return res.status(409).json({ error: 'This URN already exists in this batch' });
+      }
+    } else {
+      // Unique constraint on (urn, batch_id) doesn't catch NULL vs NULL duplicates —
+      // check manually so the same URN can't be added twice as "unassigned"
+      const existingUnassigned = await pool.query(
+        'SELECT id FROM students WHERE urn = $1 AND batch_id IS NULL',
+        [normalizedUrn]
+      );
+      if (existingUnassigned.rows.length > 0) {
+        return res.status(409).json({ error: 'This URN already exists as an unassigned student' });
+      }
     }
 
     // Check if this URN already exists in any OTHER batch
@@ -71,8 +112,8 @@ async function addStudent(req, res) {
       batchName: r.batch_name,
     }));
 
-    // If found elsewhere and admin hasn't confirmed yet, alert instead of inserting
-    if (existingBatches.length > 0 && !confirmed) {
+    // Cross-batch confirmation only matters when enrolling into a specific batch
+    if (batchId && existingBatches.length > 0 && !confirmed) {
       return res.status(200).json({
         requiresConfirmation: true,
         message: `This student (URN ${normalizedUrn}) is already enrolled in ${existingBatches.length} other batch(es).`,
@@ -81,10 +122,10 @@ async function addStudent(req, res) {
     }
 
     const result = await pool.query(
-      `INSERT INTO students (batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, false)
-       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at`,
-      [batchId, normalizedUrn, firstName, lastName, phone || null, email || null, parentPhone || null]
+      `INSERT INTO students (batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8)
+       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at, created_by`,
+      [batchId, normalizedUrn, firstName, lastName, phone || null, email || null, parentPhone || null, req.admin.id]
     );
     res.status(201).json({
       student: result.rows[0],
@@ -95,7 +136,8 @@ async function addStudent(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-// List students in a batch
+
+// List students in a specific batch (used by bulk import / batch-scoped views)
 async function listStudents(req, res) {
   const { batchId } = req.params;
   try {
@@ -104,10 +146,55 @@ async function listStudents(req, res) {
     }
 
     const result = await pool.query(
-      `SELECT id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at
+      `SELECT id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at, created_by
        FROM students WHERE batch_id = $1 ORDER BY first_name`,
       [batchId]
     );
+    res.json({ students: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// List every student visible to req.admin, across all their batches plus
+// their own (and their collaborators') unassigned students. Used by the
+// "View Students" page. Each row includes batch_name (null = unassigned).
+async function listMyStudents(req, res) {
+  try {
+    let result;
+    if (req.admin.role === 'super_admin') {
+      result = await pool.query(
+        `SELECT s.id, s.batch_id, s.urn, s.first_name, s.last_name, s.phone, s.email,
+                s.parent_phone, s.is_blacklisted, s.login_id, s.created_at, s.created_by,
+                b.name AS batch_name
+         FROM students s
+         LEFT JOIN batches b ON b.id = s.batch_id
+         ORDER BY s.first_name`
+      );
+    } else {
+      result = await pool.query(
+        `SELECT s.id, s.batch_id, s.urn, s.first_name, s.last_name, s.phone, s.email,
+                s.parent_phone, s.is_blacklisted, s.login_id, s.created_at, s.created_by,
+                b.name AS batch_name
+         FROM students s
+         LEFT JOIN batches b ON b.id = s.batch_id
+         WHERE
+           s.batch_id IN (SELECT batch_id FROM batch_admins WHERE admin_id = $1)
+           OR (
+             s.batch_id IS NULL AND (
+               s.created_by = $1
+               OR s.created_by IN (
+                 SELECT ba2.admin_id FROM batch_admins ba1
+                 JOIN batch_admins ba2 ON ba1.batch_id = ba2.batch_id
+                 WHERE ba1.admin_id = $1
+               )
+             )
+           )
+         ORDER BY s.first_name`,
+        [req.admin.id]
+      );
+    }
     res.json({ students: result.rows });
   } catch (err) {
     console.error(err);
@@ -121,11 +208,11 @@ async function updateStudent(req, res) {
   const { firstName, lastName, phone, email, parentPhone } = req.body;
 
   try {
-    const studentRes = await pool.query('SELECT batch_id FROM students WHERE id = $1', [studentId]);
+    const studentRes = await pool.query('SELECT batch_id, created_by FROM students WHERE id = $1', [studentId]);
     if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
 
-    if (!(await canAccessBatch(req.admin, studentRes.rows[0].batch_id))) {
-      return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canAccessStudent(req.admin, studentRes.rows[0]))) {
+      return res.status(403).json({ error: 'No access to this student' });
     }
 
     const result = await pool.query(
@@ -136,7 +223,7 @@ async function updateStudent(req, res) {
         email = COALESCE($4, email),
         parent_phone = COALESCE($5, parent_phone)
        WHERE id = $6
-       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at`,
+       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at, created_by`,
       [firstName, lastName, phone, email, parentPhone, studentId]
     );
 
@@ -151,11 +238,11 @@ async function updateStudent(req, res) {
 async function deleteStudent(req, res) {
   const { studentId } = req.params;
   try {
-    const studentRes = await pool.query('SELECT batch_id FROM students WHERE id = $1', [studentId]);
+    const studentRes = await pool.query('SELECT batch_id, created_by FROM students WHERE id = $1', [studentId]);
     if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
 
-    if (!(await canAccessBatch(req.admin, studentRes.rows[0].batch_id))) {
-      return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canAccessStudent(req.admin, studentRes.rows[0]))) {
+      return res.status(403).json({ error: 'No access to this student' });
     }
 
     await pool.query('DELETE FROM students WHERE id = $1', [studentId]);
@@ -166,7 +253,7 @@ async function deleteStudent(req, res) {
   }
 }
 
-// Blacklist / unblacklist a student (super_admin and admins with access to the student's batch)
+// Blacklist / unblacklist a student
 async function setBlacklist(req, res) {
   const { studentId } = req.params;
   const { blacklisted } = req.body; // true/false
@@ -176,16 +263,16 @@ async function setBlacklist(req, res) {
   }
 
   try {
-    const studentRes = await pool.query('SELECT batch_id FROM students WHERE id = $1', [studentId]);
+    const studentRes = await pool.query('SELECT batch_id, created_by FROM students WHERE id = $1', [studentId]);
     if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
 
-    if (!(await canAccessBatch(req.admin, studentRes.rows[0].batch_id))) {
-      return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canAccessStudent(req.admin, studentRes.rows[0]))) {
+      return res.status(403).json({ error: 'No access to this student' });
     }
 
     const result = await pool.query(
       `UPDATE students SET is_blacklisted = $1 WHERE id = $2
-       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at`,
+       RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at, created_by`,
       [blacklisted, studentId]
     );
 
@@ -209,11 +296,11 @@ async function setStudentCredentials(req, res) {
   }
 
   try {
-    const studentRes = await pool.query('SELECT batch_id FROM students WHERE id = $1', [studentId]);
+    const studentRes = await pool.query('SELECT batch_id, created_by FROM students WHERE id = $1', [studentId]);
     if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
 
-    if (!(await canAccessBatch(req.admin, studentRes.rows[0].batch_id))) {
-      return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canAccessStudent(req.admin, studentRes.rows[0]))) {
+      return res.status(403).json({ error: 'No access to this student' });
     }
 
     const normalizedLoginId = loginId.trim();
@@ -241,4 +328,13 @@ async function setStudentCredentials(req, res) {
   }
 }
 
-module.exports = { addStudent, listStudents, updateStudent, deleteStudent, setBlacklist, setStudentCredentials, getStudentById };
+module.exports = {
+  addStudent,
+  listStudents,
+  listMyStudents,
+  updateStudent,
+  deleteStudent,
+  setBlacklist,
+  setStudentCredentials,
+  getStudentById,
+};

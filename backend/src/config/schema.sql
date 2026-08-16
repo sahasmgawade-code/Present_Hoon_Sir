@@ -41,6 +41,7 @@ CREATE TABLE students (
   email VARCHAR(150),
   parent_phone VARCHAR(20),
   batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
+  created_by INTEGER REFERENCES admins(id) ON DELETE SET NULL,
   is_blacklisted BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW(),
   UNIQUE (urn, batch_id),

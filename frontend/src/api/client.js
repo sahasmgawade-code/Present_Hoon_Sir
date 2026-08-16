@@ -76,8 +76,10 @@ export const api = {
   revokeAdminFromBatch: (batchId, adminId) =>
     request(`/batches/${batchId}/assign-admin/${adminId}`, { method: 'DELETE' }),
   listStudents: (batchId) => request(`/students/batch/${batchId}`),
+  listMyStudents: () => request('/students/mine'),
   getStudent: (studentId) => request(`/students/${studentId}`),
   createStudent: (batchId, payload) => request(`/students/batch/${batchId}`, { method: 'POST', body: payload }),
+  addStudentGeneral: (payload) => request('/students', { method: 'POST', body: payload }),
   updateStudent: (id, payload) => request(`/students/${id}`, { method: 'PUT', body: payload }),
   deleteStudent: (id) => request(`/students/${id}`, { method: 'DELETE' }),
   blacklistStudent: (id, blacklisted) =>

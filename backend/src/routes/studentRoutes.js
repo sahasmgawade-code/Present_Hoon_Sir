@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   addStudent,
   listStudents,
+  listMyStudents,
   updateStudent,
   deleteStudent,
   setBlacklist,
@@ -13,8 +14,10 @@ const { verifyToken, requireRole } = require('../middleware/auth');
 
 router.use(verifyToken);
 
+router.get('/mine', listMyStudents);
 router.get('/batch/:batchId', listStudents);
 router.post('/batch/:batchId', addStudent);
+router.post('/', addStudent);
 router.get('/:studentId', getStudentById);
 router.put('/:studentId', updateStudent);
 router.delete('/:studentId', deleteStudent);

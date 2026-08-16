@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
-const emptyForm = { urn: '', firstName: '', lastName: '', phone: '', email: '', parentPhone: '' };
+
+const emptyForm = { urn: '', firstName: '', lastName: '', phone: '', email: '', parentPhone: '', batchId: '' };
 
 function GearIcon({ className }) {
   return (
@@ -13,7 +13,7 @@ function GearIcon({ className }) {
   );
 }
 
-function StudentForm({ initial, onCancel, onSubmit, submitLabel, error, lockUrn }) {
+function StudentForm({ initial, batches, onCancel, onSubmit, submitLabel, error }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
 
@@ -51,15 +51,27 @@ function StudentForm({ initial, onCancel, onSubmit, submitLabel, error, lockUrn 
             <input
               type={key === 'email' ? 'email' : 'text'}
               required={required}
-              readOnly={key === 'urn' && lockUrn}
               value={form[key]}
               onChange={update(key)}
-              className={`w-full border border-rule rounded px-3 py-2 focus-visible:outline-forest ${
-                key === 'urn' && lockUrn ? 'bg-ink/5 text-ink/50 cursor-not-allowed' : 'bg-paper'
-              }`}
+              className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
             />
           </div>
         ))}
+        <div>
+          <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
+            Assign to Batch
+          </label>
+          <select
+            value={form.batchId}
+            onChange={update('batchId')}
+            className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
+          >
+            <option value="">Not assigned</option>
+            {batches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && <p className="text-sm text-brick font-medium">{error}</p>}
@@ -86,7 +98,6 @@ function StudentForm({ initial, onCancel, onSubmit, submitLabel, error, lockUrn 
 
 export default function Students() {
   const [batches, setBatches] = useState([]);
-  const [batchId, setBatchId] = useSelectedBatch();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -96,27 +107,14 @@ export default function Students() {
   const [addError, setAddError] = useState('');
 
   useEffect(() => {
-    api.listBatches()
-      .then((data) => {
-        setBatches(data.batches);
-        const stillValid = data.batches.some((b) => b.id === batchId);
-        if (!stillValid) {
-          setBatchId(data.batches.length > 0 ? data.batches[0].id : null);
-        }
-        if (data.batches.length === 0) setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    api.listBatches().then((data) => setBatches(data.batches)).catch(() => {});
   }, []);
 
-  const loadStudents = useCallback(async (id) => {
+  const loadStudents = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await api.listStudents(id);
+      const data = await api.listMyStudents();
       setStudents(data.students);
     } catch (err) {
       setError(err.message);
@@ -126,8 +124,8 @@ export default function Students() {
   }, []);
 
   useEffect(() => {
-    if (batchId) loadStudents(batchId);
-  }, [batchId, loadStudents]);
+    loadStudents();
+  }, [loadStudents]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -140,49 +138,38 @@ export default function Students() {
   async function handleAdd(form) {
     setAddError('');
     try {
-      const result = await api.createStudent(batchId, form);
+      const payload = {
+        urn: form.urn,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        email: form.email,
+        parentPhone: form.parentPhone,
+        ...(form.batchId ? { batchId: Number(form.batchId) } : {}),
+      };
+
+      const result = await api.addStudentGeneral(payload);
 
       if (result?.requiresConfirmation) {
         const batchNames = result.existingBatches.map((b) => b.batchName).join(', ');
         const proceed = window.confirm(
-          `${result.message}\nExisting batch(es): ${batchNames}\n\nAdd this student to the current batch as well?`
+          `${result.message}\nExisting batch(es): ${batchNames}\n\nAdd this student to the selected batch as well?`
         );
         if (!proceed) return;
-        await api.createStudent(batchId, { ...form, confirmed: true });
+        await api.addStudentGeneral({ ...payload, confirmed: true });
       }
 
       setShowAddForm(false);
-      await loadStudents(batchId);
+      await loadStudents();
     } catch (err) {
       setAddError(err.message || 'Could not add student.');
     }
-  }
-
-  if (batches.length === 0 && !loading) {
-    return (
-      <div className="text-center py-24">
-        <p className="font-display text-2xl text-ink/70 mb-2">No batches yet</p>
-        <p className="text-sm text-ink/50">Create a batch before adding students.</p>
-      </div>
-    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-600">View Students</h1>
-        <select
-          value={batchId ?? ''}
-          onChange={(e) => {
-            setBatchId(Number(e.target.value));
-            setShowAddForm(false);
-          }}
-          className="border border-rule rounded px-3 py-2 bg-card font-medium"
-        >
-          {batches.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
       </div>
 
       {error && <p className="text-brick font-medium">{error}</p>}
@@ -209,11 +196,11 @@ export default function Students() {
       {showAddForm && (
         <StudentForm
           initial={emptyForm}
+          batches={batches}
           onCancel={() => setShowAddForm(false)}
           onSubmit={handleAdd}
           submitLabel="Add Student"
           error={addError}
-          lockUrn={false}
         />
       )}
 
@@ -222,7 +209,7 @@ export default function Students() {
       ) : filtered.length === 0 ? (
         <div className="bg-card border border-rule rounded-lg p-10 text-center">
           <p className="text-sm text-ink/50">
-            {students.length === 0 ? 'No students in this batch yet.' : 'No students match your search.'}
+            {students.length === 0 ? 'No students yet.' : 'No students match your search.'}
           </p>
         </div>
       ) : (
@@ -233,6 +220,13 @@ export default function Students() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium">{s.first_name} {s.last_name}</span>
                   <span className="font-mono text-xs text-ink/50">{s.urn}</span>
+                  <span
+                    className={`text-xs font-mono uppercase tracking-wide rounded px-1.5 py-0.5 border ${
+                      s.batch_name ? 'text-ink/50 border-rule' : 'text-amber border-amber'
+                    }`}
+                  >
+                    {s.batch_name || 'NOT ASSIGNED'}
+                  </span>
                   {s.is_blacklisted && (
                     <span className="text-xs font-mono uppercase tracking-wide text-brick border border-brick rounded px-1.5 py-0.5">
                       Blacklisted
