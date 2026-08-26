@@ -2,21 +2,17 @@ const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const pool = require('../config/db');
 const { getTodayIST } = require('../utils/dateUtils');
+const { canActorAccessBatch } = require('./attendanceController');
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const DEFAULT_SESSION_MINUTES = 5; // fallback if a batch somehow has no value set
 
-// Admin: generate a new QR session for a batch
+// Admin or Faculty: generate a new QR session for a batch
 async function generateSession(req, res) {
   const { batchId } = req.params;
 
   try {
-    // access check (reuse same pattern as students)
-    if (req.admin.role !== 'super_admin') {
-      const access = await pool.query(
-        'SELECT 1 FROM batch_admins WHERE batch_id = $1 AND admin_id = $2',
-        [batchId, req.admin.id]
-      );
-      if (access.rows.length === 0) return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canActorAccessBatch(req.actor, batchId))) {
+      return res.status(403).json({ error: 'No access to this batch' });
     }
 
     const batchRes = await pool.query('SELECT qr_validity_minutes FROM batches WHERE id = $1', [batchId]);
@@ -137,7 +133,7 @@ async function submitAttendance(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-// Admin: get the response sheet for a session (list of who submitted)
+// Admin or Faculty: get the response sheet for a session (list of who submitted)
 async function getSessionReport(req, res) {
   const { sessionId } = req.params;
   try {
@@ -145,12 +141,8 @@ async function getSessionReport(req, res) {
     if (sessionRes.rows.length === 0) return res.status(404).json({ error: 'Session not found' });
     const session = sessionRes.rows[0];
 
-    if (req.admin.role !== 'super_admin') {
-      const access = await pool.query(
-        'SELECT 1 FROM batch_admins WHERE batch_id = $1 AND admin_id = $2',
-        [session.batch_id, req.admin.id]
-      );
-      if (access.rows.length === 0) return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canActorAccessBatch(req.actor, session.batch_id))) {
+      return res.status(403).json({ error: 'No access to this batch' });
     }
 
     const result = await pool.query(
@@ -167,7 +159,7 @@ async function getSessionReport(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-// Admin: download the response sheet for a session as a CSV file
+// Admin or Faculty: download the response sheet for a session as a CSV file
 async function downloadSessionReport(req, res) {
   const { sessionId } = req.params;
   try {
@@ -175,13 +167,8 @@ async function downloadSessionReport(req, res) {
     if (sessionRes.rows.length === 0) return res.status(404).json({ error: 'Session not found' });
     const session = sessionRes.rows[0];
 
-    // same access check pattern used elsewhere
-    if (req.admin.role !== 'super_admin') {
-      const access = await pool.query(
-        'SELECT 1 FROM batch_admins WHERE batch_id = $1 AND admin_id = $2',
-        [session.batch_id, req.admin.id]
-      );
-      if (access.rows.length === 0) return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canActorAccessBatch(req.actor, session.batch_id))) {
+      return res.status(403).json({ error: 'No access to this batch' });
     }
 
     const submissionsRes = await pool.query(

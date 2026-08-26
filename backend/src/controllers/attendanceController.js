@@ -3,7 +3,7 @@ const { sendEmail } = require('../utils/mailer');
 const { sendSMS } = require('../utils/smsSender');
 const { escapeHtml } = require('../utils/htmlEscape');
 // Email every eligible admin, and SMS parents, when a student is newly marked absent
-async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
+async function notifyAbsentees(batchId, date, studentIds, actor) {
   try {
     if (studentIds.length === 0) return;
 
@@ -15,15 +15,18 @@ async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
       [studentIds]
     );
 
-    // SMS is only sent if the admin who marked attendance has SMS notifications enabled
-    // (this flag is controlled by the Super Admin on each admin's settings page)
-    const actingAdminRes = await pool.query(
-      'SELECT sms_notifications_enabled FROM admins WHERE id = $1',
-      [actingAdminId]
-    );
-    const smsAllowed = actingAdminRes.rows[0]?.sms_notifications_enabled === true;
-
-    // Emails now go to the student directly, so admin recipients are no longer required to proceed
+    // SMS is only sent if the acting admin has SMS notifications enabled
+    // (this flag is controlled by the Super Admin on each admin's settings page).
+    // Faculty don't have this setting, so SMS is allowed by default when a
+    // faculty member marks the attendance.
+    let smsAllowed = true;
+    if (actor.type === 'admin') {
+      const actingAdminRes = await pool.query(
+        'SELECT sms_notifications_enabled FROM admins WHERE id = $1',
+        [actor.id]
+      );
+      smsAllowed = actingAdminRes.rows[0]?.sms_notifications_enabled === true;
+    }
 
     for (const student of studentsRes.rows) {
       const studentName = `${student.first_name} ${student.last_name}`;
@@ -55,13 +58,26 @@ async function notifyAbsentees(batchId, date, studentIds, actingAdminId) {
   }
 }
 
-async function canAccessBatch(admin, batchId) {
-  if (admin.role === 'super_admin') return true;
-  const result = await pool.query(
-    'SELECT 1 FROM batch_admins WHERE batch_id = $1 AND admin_id = $2',
-    [batchId, admin.id]
-  );
-  return result.rows.length > 0;
+// Works for either an admin actor ({ type: 'admin', role, id }) or a
+// faculty actor ({ type: 'faculty', id }) — req.actor is set by the
+// verifyAdminOrFaculty middleware.
+async function canActorAccessBatch(actor, batchId) {
+  if (actor.type === 'admin') {
+    if (actor.role === 'super_admin') return true;
+    const result = await pool.query(
+      'SELECT 1 FROM batch_admins WHERE batch_id = $1 AND admin_id = $2',
+      [batchId, actor.id]
+    );
+    return result.rows.length > 0;
+  }
+  if (actor.type === 'faculty') {
+    const result = await pool.query(
+      'SELECT 1 FROM faculty_batches WHERE batch_id = $1 AND faculty_id = $2',
+      [batchId, actor.id]
+    );
+    return result.rows.length > 0;
+  }
+  return false;
 }
 
 // Get attendance for a batch on a specific date (for the Edit Attendance page)
@@ -73,7 +89,7 @@ async function getAttendanceForDate(req, res) {
   if (!date) return res.status(400).json({ error: 'date query param is required (YYYY-MM-DD)' });
 
   try {
-    if (!(await canAccessBatch(req.admin, batchId))) {
+    if (!(await canActorAccessBatch(req.actor, batchId))) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
 
@@ -107,7 +123,7 @@ async function saveAttendanceForDate(req, res) {
   }
 
   try {
-    if (!(await canAccessBatch(req.admin, batchId))) {
+    if (!(await canActorAccessBatch(req.actor, batchId))) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
 
@@ -151,7 +167,7 @@ async function saveAttendanceForDate(req, res) {
     const newlyAbsentIds = records
       .filter((r) => r.status === 'absent' && prevStatus.get(r.studentId) !== 'absent')
       .map((r) => r.studentId);
-    notifyAbsentees(batchId, date, newlyAbsentIds, req.admin.id);
+    notifyAbsentees(batchId, date, newlyAbsentIds, req.actor);
 
     res.json({ message: 'Attendance saved', date, count: records.length });
   } catch (err) {
@@ -159,4 +175,4 @@ async function saveAttendanceForDate(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { getAttendanceForDate, saveAttendanceForDate };
+module.exports = { getAttendanceForDate, saveAttendanceForDate, canActorAccessBatch };

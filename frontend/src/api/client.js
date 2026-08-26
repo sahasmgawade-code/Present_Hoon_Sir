@@ -6,6 +6,9 @@ function getToken() {
 function getStudentToken() {
   return localStorage.getItem('attendqr_student_token');
 }
+function getFacultyToken() {
+  return localStorage.getItem('attendqr_faculty_token');
+}
 function getDeviceToken() {
   let deviceToken = localStorage.getItem('attendqr_device_token');
   if (!deviceToken) {
@@ -14,8 +17,15 @@ function getDeviceToken() {
   }
   return deviceToken;
 }
+
+function tokenFor(authType) {
+  if (authType === 'student') return getStudentToken();
+  if (authType === 'faculty') return getFacultyToken();
+  return getToken();
+}
+
 async function request(path, { method = 'GET', body, headers = {}, raw = false, authType = 'admin' } = {}) {
-  const token = authType === 'student' ? getStudentToken() : getToken();
+  const token = tokenFor(authType);
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers: {
@@ -27,6 +37,34 @@ async function request(path, { method = 'GET', body, headers = {}, raw = false, 
   });
 
   if (raw) return res; // caller handles the response itself (e.g. file download)
+
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {
+    // no JSON body
+  }
+
+  if (!res.ok) {
+    const message = data?.error || `Request failed (${res.status})`;
+    const err = new Error(message);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
+// For multipart/form-data uploads (assignment PDFs, submission files) — the
+// browser sets the Content-Type boundary itself, so it must NOT be set here.
+async function requestForm(path, formData, { method = 'POST', authType = 'admin' } = {}) {
+  const token = tokenFor(authType);
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  });
 
   let data = null;
   try {
@@ -89,6 +127,9 @@ export const api = {
   studentLogin: (loginId, password) =>
     request('/student-auth/login', { method: 'POST', body: { loginId, password } }),
   getMyAttendance: () => request('/student-auth/me', { authType: 'student' }),
+  getMyAssignments: () => request('/student-auth/assignments', { authType: 'student' }),
+  submitAssignment: (assignmentId, formData) =>
+    requestForm(`/student-auth/assignments/${assignmentId}/submit`, formData, { authType: 'student' }),
   getAttendanceForDate: (batchId, date) => request(`/attendance/batch/${batchId}?date=${date}`),
   saveAttendance: (batchId, date, records) =>
     request(`/attendance/batch/${batchId}`, { method: 'POST', body: { date, records } }),
@@ -111,6 +152,54 @@ export const api = {
     return request(`/reports/batch/${batchId}/matrix${qs ? `?${qs}` : ''}`);
   },
   getStudentReport: (studentId) => request(`/reports/student/${studentId}`),
+
+  // --- Faculty auth (faculty portal login) ---
+  facultyLogin: (email, password) =>
+    request('/faculty-auth/login', { method: 'POST', body: { email, password } }),
+  verifyFacultyResetToken: (token) => request(`/faculty-auth/verify-reset-token/${token}`),
+  setFacultyPassword: (token, password) =>
+    request('/faculty-auth/set-password', { method: 'POST', body: { token, password } }),
+  changeFacultyPassword: (currentPassword, newPassword) =>
+    request('/faculty-auth/change-password', {
+      method: 'POST',
+      body: { currentPassword, newPassword },
+      authType: 'faculty',
+    }),
+
+  // --- Faculty management (admin side) ---
+  listFaculties: () => request('/faculties'),
+  createFaculty: (payload) => request('/faculties', { method: 'POST', body: payload }),
+  updateFaculty: (id, name) => request(`/faculties/${id}`, { method: 'PUT', body: { name } }),
+  toggleFacultyActive: (id, isActive) =>
+    request(`/faculties/${id}/active`, { method: 'PATCH', body: { isActive } }),
+  deleteFaculty: (id) => request(`/faculties/${id}`, { method: 'DELETE' }),
+  addFacultyCollaborator: (facultyId, adminId) =>
+    request(`/faculties/${facultyId}/collaborators`, { method: 'POST', body: { adminId } }),
+  removeFacultyCollaborator: (facultyId, adminId) =>
+    request(`/faculties/${facultyId}/collaborators/${adminId}`, { method: 'DELETE' }),
+  getFacultyBatchAccess: (facultyId) => request(`/faculties/${facultyId}/batches`),
+  assignBatchToFaculty: (facultyId, batchId) =>
+    request(`/faculties/${facultyId}/batches`, { method: 'POST', body: { batchId } }),
+  revokeBatchFromFaculty: (facultyId, batchId) =>
+    request(`/faculties/${facultyId}/batches/${batchId}`, { method: 'DELETE' }),
+
+  // --- Faculty portal (faculty-facing) ---
+  getMyFacultyBatches: () => request('/faculty-portal/batches', { authType: 'faculty' }),
+  getFacultyBatchStudents: (batchId) =>
+    request(`/faculty-portal/batches/${batchId}/students`, { authType: 'faculty' }),
+  listBatchAssignments: (batchId) =>
+    request(`/faculty-portal/batches/${batchId}/assignments`, { authType: 'faculty' }),
+  createAssignment: (batchId, formData) =>
+    requestForm(`/faculty-portal/batches/${batchId}/assignments`, formData, { authType: 'faculty' }),
+  deleteAssignment: (id) => request(`/faculty-portal/assignments/${id}`, { method: 'DELETE', authType: 'faculty' }),
+  listSubmissions: (assignmentId) =>
+    request(`/faculty-portal/assignments/${assignmentId}/submissions`, { authType: 'faculty' }),
+  gradeSubmission: (submissionId, status, remark) =>
+    request(`/faculty-portal/submissions/${submissionId}`, {
+      method: 'PATCH',
+      body: { status, remark },
+      authType: 'faculty',
+    }),
 };
 async function triggerFileDownload(response) {
   const disposition = response.headers.get('Content-Disposition') || '';
@@ -127,4 +216,4 @@ async function triggerFileDownload(response) {
   a.remove();
   URL.revokeObjectURL(url);
 }
-export { getToken, getDeviceToken, getStudentToken };
+export { getToken, getDeviceToken, getStudentToken, getFacultyToken };

@@ -19,6 +19,12 @@ import StudentSettings from './pages/StudentSettings.jsx';
 import StudentLogin from './pages/StudentLogin.jsx';
 import StudentPortal from './pages/StudentPortal.jsx';
 import StudentProtectedRoute from './components/StudentProtectedRoute.jsx';
+import FacultyLogin from './pages/FacultyLogin.jsx';
+import FacultySetPassword from './pages/FacultySetPassword.jsx';
+import FacultyPortal from './pages/FacultyPortal.jsx';
+import FacultyProtectedRoute from './components/FacultyProtectedRoute.jsx';
+import ManageFaculty from './pages/ManageFaculty.jsx';
+import FacultySettings from './pages/FacultySettings.jsx';
 function StubPage({ title }) {
   return (
     <div className="text-center py-24">
@@ -46,7 +52,12 @@ export default function App() {
       <Route path="/reports" element={<ProtectedRoute><Layout><Reports /></Layout></ProtectedRoute>} />
       <Route path="/admins" element={<ProtectedRoute><Layout><ManageAdmins /></Layout></ProtectedRoute>} />
       <Route path="/admins/:id/settings" element={<ProtectedRoute><Layout><AdminSettings /></Layout></ProtectedRoute>} />
+      <Route path="/faculties" element={<ProtectedRoute><Layout><ManageFaculty /></Layout></ProtectedRoute>} />
+      <Route path="/faculties/:id/settings" element={<ProtectedRoute><Layout><FacultySettings /></Layout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Layout><Settings /></Layout></ProtectedRoute>} />
+      <Route path="/faculty/login" element={<FacultyLogin />} />
+      <Route path="/faculty/set-password/:token" element={<FacultySetPassword />} />
+      <Route path="/faculty/portal" element={<FacultyProtectedRoute><FacultyPortal /></FacultyProtectedRoute>} />
     </Routes>
   );
 }

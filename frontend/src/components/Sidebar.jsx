@@ -48,6 +48,12 @@ const icons = {
       <path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4Z" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
+  faculty: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M22 10 12 5 2 10l10 5 10-5Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   settings: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="12" cy="12" r="3" />
@@ -219,6 +225,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           <NavItem to="/edit-attendance" icon={icons.edit} label="Edit Attendance" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
           <NavItem to="/reports" icon={icons.reports} label="Reports" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
           <NavItem to="/students" icon={icons.students} label="View Students" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
+          <NavItem to="/faculties" icon={icons.faculty} label="Manage Faculty" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
           {isSuperAdmin && (
             <NavItem to="/admins" icon={icons.admin} label="Manage Admin" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
           )}

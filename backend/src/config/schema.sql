@@ -84,3 +84,65 @@ CREATE TABLE qr_submissions (
 CREATE INDEX idx_attendance_batch_date ON attendance(batch_id, date);
 CREATE INDEX idx_students_batch ON students(batch_id);
 CREATE INDEX idx_qr_submissions_device ON qr_submissions(device_token, submitted_at);
+
+-- Faculties (created by admins, log in separately from admins/students)
+CREATE TABLE faculties (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password_hash VARCHAR(255),
+  created_by INTEGER REFERENCES admins(id) ON DELETE SET NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  password_reset_token VARCHAR(255),
+  password_reset_expires TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Which admins can see/manage a given faculty (creator + collaborators)
+CREATE TABLE faculty_admins (
+  faculty_id INTEGER REFERENCES faculties(id) ON DELETE CASCADE,
+  admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
+  PRIMARY KEY (faculty_id, admin_id)
+);
+
+-- Which batches a faculty is allowed to work with
+CREATE TABLE faculty_batches (
+  faculty_id INTEGER REFERENCES faculties(id) ON DELETE CASCADE,
+  batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
+  PRIMARY KEY (faculty_id, batch_id)
+);
+
+-- Assignments posted by faculty for a batch (PDF lives in Google Drive)
+CREATE TABLE assignments (
+  id SERIAL PRIMARY KEY,
+  batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
+  faculty_id INTEGER REFERENCES faculties(id) ON DELETE SET NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  due_date DATE,
+  drive_file_id VARCHAR(255) NOT NULL,
+  drive_file_url TEXT NOT NULL,
+  file_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Student submissions against an assignment (file also in Google Drive)
+CREATE TABLE assignment_submissions (
+  id SERIAL PRIMARY KEY,
+  assignment_id INTEGER REFERENCES assignments(id) ON DELETE CASCADE,
+  student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
+  drive_file_id VARCHAR(255) NOT NULL,
+  drive_file_url TEXT NOT NULL,
+  file_name VARCHAR(255),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'incomplete')),
+  remark TEXT,
+  submitted_at TIMESTAMP DEFAULT NOW(),
+  reviewed_at TIMESTAMP,
+  UNIQUE (assignment_id, student_id)
+);
+
+CREATE INDEX idx_faculty_batches_faculty ON faculty_batches(faculty_id);
+CREATE INDEX idx_faculty_admins_admin ON faculty_admins(admin_id);
+CREATE INDEX idx_assignments_batch ON assignments(batch_id);
+CREATE INDEX idx_submissions_assignment ON assignment_submissions(assignment_id);
+CREATE INDEX idx_submissions_student ON assignment_submissions(student_id);

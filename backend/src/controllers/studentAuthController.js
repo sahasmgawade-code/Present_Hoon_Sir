@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
+const { uploadSubmissionFile, deleteFile } = require('../utils/googleDrive');
 
 // Public: student logs in with their Login ID + password
 async function studentLogin(req, res) {
@@ -105,4 +106,86 @@ async function getMyAttendance(req, res) {
   }
 }
 
-module.exports = { studentLogin, getMyAttendance };
+// Protected (student token): list assignments for the student's own batch,
+// each annotated with the student's own submission (if any)
+async function getMyAssignments(req, res) {
+  const { studentId, batchId } = req.student;
+  try {
+    const result = await pool.query(
+      `SELECT a.id, a.title, a.description, a.due_date, a.drive_file_url, a.file_name, a.created_at,
+              f.name AS faculty_name,
+              sub.id AS submission_id, sub.drive_file_url AS submission_url,
+              sub.file_name AS submission_file_name, sub.status, sub.remark,
+              sub.submitted_at, sub.reviewed_at
+       FROM assignments a
+       LEFT JOIN faculties f ON f.id = a.faculty_id
+       LEFT JOIN assignment_submissions sub
+         ON sub.assignment_id = a.id AND sub.student_id = $1
+       WHERE a.batch_id = $2
+       ORDER BY a.created_at DESC`,
+      [studentId, batchId]
+    );
+    res.json({ assignments: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+// Protected (student token): submit (or resubmit) completed work for an assignment
+async function submitAssignment(req, res) {
+  const { studentId, batchId } = req.student;
+  const { assignmentId } = req.params;
+
+  try {
+    const assignmentRes = await pool.query(
+      `SELECT a.id, a.title, a.batch_id, b.name AS batch_name
+       FROM assignments a
+       JOIN batches b ON b.id = a.batch_id
+       WHERE a.id = $1`,
+      [assignmentId]
+    );
+    if (assignmentRes.rows.length === 0) return res.status(404).json({ error: 'Assignment not found' });
+    const assignment = assignmentRes.rows[0];
+
+    if (assignment.batch_id !== batchId) {
+      return res.status(403).json({ error: 'This assignment is not for your batch' });
+    }
+
+    // if a previous submission exists, remove its old Drive file before replacing
+    const existing = await pool.query(
+      'SELECT drive_file_id FROM assignment_submissions WHERE assignment_id = $1 AND student_id = $2',
+      [assignmentId, studentId]
+    );
+    if (existing.rows.length > 0) {
+      await deleteFile(existing.rows[0].drive_file_id);
+    }
+
+    const { fileId, webViewLink } = await uploadSubmissionFile({
+      batchId: assignment.batch_id,
+      batchName: assignment.batch_name,
+      assignmentId: assignment.id,
+      assignmentTitle: assignment.title,
+      fileName: `${Date.now()}-student${studentId}-${req.file.originalname}`,
+      mimeType: req.file.mimetype,
+      buffer: req.file.buffer,
+    });
+
+    const result = await pool.query(
+      `INSERT INTO assignment_submissions (assignment_id, student_id, drive_file_id, drive_file_url, file_name, status, remark, submitted_at, reviewed_at)
+       VALUES ($1, $2, $3, $4, $5, 'pending', NULL, now(), NULL)
+       ON CONFLICT (assignment_id, student_id)
+       DO UPDATE SET drive_file_id = $3, drive_file_url = $4, file_name = $5,
+                     status = 'pending', remark = NULL, submitted_at = now(), reviewed_at = NULL
+       RETURNING *`,
+      [assignmentId, studentId, fileId, webViewLink, req.file.originalname]
+    );
+
+    res.json({ submission: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+module.exports = { studentLogin, getMyAttendance, getMyAssignments, submitAssignment };
