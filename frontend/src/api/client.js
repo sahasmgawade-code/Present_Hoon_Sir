@@ -1,19 +1,19 @@
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
 
 function getToken() {
-  return localStorage.getItem('attendqr_token');
+  return localStorage.getItem('phsams_token');
 }
 function getStudentToken() {
-  return localStorage.getItem('attendqr_student_token');
+  return localStorage.getItem('phsams_student_token');
 }
 function getFacultyToken() {
-  return localStorage.getItem('attendqr_faculty_token');
+  return localStorage.getItem('phsams_faculty_token');
 }
 function getDeviceToken() {
-  let deviceToken = localStorage.getItem('attendqr_device_token');
+  let deviceToken = localStorage.getItem('phsams_device_token');
   if (!deviceToken) {
     deviceToken = crypto.randomUUID();
-    localStorage.setItem('attendqr_device_token', deviceToken);
+    localStorage.setItem('phsams_device_token', deviceToken);
   }
   return deviceToken;
 }

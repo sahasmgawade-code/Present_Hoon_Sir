@@ -7,5 +7,4 @@ Disallow: /edit-attendance
 Disallow: /reports
 Disallow: /batches/
 Disallow: /scan/
-
-Sitemap: https://attendqr-frontend.onrender.com/sitemap.xml
+Sitemap: https://present-hoon-sir-dfhv.onrender.com/sitemap.xml

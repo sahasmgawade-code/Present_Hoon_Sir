@@ -5,21 +5,21 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(() => {
-    const stored = localStorage.getItem('attendqr_admin');
+    const stored = localStorage.getItem('phsams_admin');
     return stored ? JSON.parse(stored) : null;
   });
 
   const login = useCallback(async (email, password) => {
     const data = await api.login(email, password);
-    localStorage.setItem('attendqr_token', data.token);
-    localStorage.setItem('attendqr_admin', JSON.stringify(data.admin));
+    localStorage.setItem('phsams_token', data.token);
+    localStorage.setItem('phsams_admin', JSON.stringify(data.admin));
     setAdmin(data.admin);
     return data.admin;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('attendqr_token');
-    localStorage.removeItem('attendqr_admin');
+    localStorage.removeItem('phsams_token');
+    localStorage.removeItem('phsams_admin');
     setAdmin(null);
   }, []);
 
@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     setAdmin((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, name: newName };
-      localStorage.setItem('attendqr_admin', JSON.stringify(updated));
+      localStorage.setItem('phsams_admin', JSON.stringify(updated));
       return updated;
     });
   }, []);

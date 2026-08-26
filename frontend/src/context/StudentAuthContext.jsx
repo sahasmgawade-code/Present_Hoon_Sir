@@ -5,21 +5,21 @@ const StudentAuthContext = createContext(null);
 
 export function StudentAuthProvider({ children }) {
   const [student, setStudent] = useState(() => {
-    const stored = localStorage.getItem('attendqr_student');
+    const stored = localStorage.getItem('phsams_student');
     return stored ? JSON.parse(stored) : null;
   });
 
   const login = useCallback(async (loginId, password) => {
     const data = await api.studentLogin(loginId, password);
-    localStorage.setItem('attendqr_student_token', data.token);
-    localStorage.setItem('attendqr_student', JSON.stringify(data.student));
+    localStorage.setItem('phsams_student_token', data.token);
+    localStorage.setItem('phsams_student', JSON.stringify(data.student));
     setStudent(data.student);
     return data.student;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('attendqr_student_token');
-    localStorage.removeItem('attendqr_student');
+    localStorage.removeItem('phsams_student_token');
+    localStorage.removeItem('phsams_student');
     setStudent(null);
   }, []);
 

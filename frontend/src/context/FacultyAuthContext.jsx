@@ -5,21 +5,21 @@ const FacultyAuthContext = createContext(null);
 
 export function FacultyAuthProvider({ children }) {
   const [faculty, setFaculty] = useState(() => {
-    const stored = localStorage.getItem('attendqr_faculty');
+    const stored = localStorage.getItem('phsams_faculty');
     return stored ? JSON.parse(stored) : null;
   });
 
   const login = useCallback(async (email, password) => {
     const data = await api.facultyLogin(email, password);
-    localStorage.setItem('attendqr_faculty_token', data.token);
-    localStorage.setItem('attendqr_faculty', JSON.stringify(data.faculty));
+    localStorage.setItem('phsams_faculty_token', data.token);
+    localStorage.setItem('phsams_faculty', JSON.stringify(data.faculty));
     setFaculty(data.faculty);
     return data.faculty;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('attendqr_faculty_token');
-    localStorage.removeItem('attendqr_faculty');
+    localStorage.removeItem('phsams_faculty_token');
+    localStorage.removeItem('phsams_faculty');
     setFaculty(null);
   }, []);
 

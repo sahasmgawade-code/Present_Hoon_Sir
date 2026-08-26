@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-const STORAGE_KEY = 'attendqr_selected_batch_id';
+const STORAGE_KEY = 'phsams_selected_batch_id';
 
 // Persists the selected batch across reloads and tabs via localStorage.
 export function useSelectedBatch() {

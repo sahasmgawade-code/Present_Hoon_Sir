@@ -4,7 +4,7 @@ const pool = require('./src/config/db');
 
 async function seed() {
   const name = 'Super Admin';
-  const email = 'superadmin@attendqr.com'; // change if you want
+  const email = 'superadmin@presenthoonsir.com'; // change if you want
   const plainPassword = 'ChangeMe123!';    // change this before running, or change after login
 
   try {
