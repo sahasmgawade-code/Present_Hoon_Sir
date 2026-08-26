@@ -9,7 +9,7 @@
 //   4. It prints a URL. Open it in a browser, log in with your DEDICATED Google account, allow access.
 //   5. Your browser will redirect to a localhost page — the terminal will auto-detect it.
 //   6. Copy the printed values into backend/.env
-
+require('dotenv').config();
 const http = require('http');
 const { google } = require('googleapis');
 
