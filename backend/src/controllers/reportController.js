@@ -9,6 +9,30 @@ async function canAccessBatch(admin, batchId) {
   return result.rows.length > 0;
 }
 
+// Helper: are two admins "collaborators" — do they share access to at least one batch?
+async function isCollaboratorWith(adminId, otherAdminId) {
+  if (adminId === otherAdminId) return true;
+  const result = await pool.query(
+    `SELECT 1 FROM batch_admins ba1
+     JOIN batch_admins ba2 ON ba1.batch_id = ba2.batch_id
+     WHERE ba1.admin_id = $1 AND ba2.admin_id = $2
+     LIMIT 1`,
+    [adminId, otherAdminId]
+  );
+  return result.rows.length > 0;
+}
+
+// Helper: can req.admin access this specific student row (batch-assigned or not)?
+async function canAccessStudent(admin, student) {
+  if (admin.role === 'super_admin') return true;
+  if (student.batch_id) {
+    return canAccessBatch(admin, student.batch_id);
+  }
+  // Unassigned student: only visible to its creator, or the creator's collaborators
+  if (!student.created_by) return false;
+  return isCollaboratorWith(admin.id, student.created_by);
+}
+
 // Batch report: per-student stats + defaulter split (< 75%) vs good standing (>= 75%)
 // Optional ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD restricts the calculation to that
 // window. Omit both for the all-time report.
@@ -93,8 +117,8 @@ async function getStudentReport(req, res) {
 
     const student = studentRes.rows[0];
 
-    if (!(await canAccessBatch(req.admin, student.batch_id))) {
-      return res.status(403).json({ error: 'No access to this batch' });
+    if (!(await canAccessStudent(req.admin, student))) {
+      return res.status(403).json({ error: 'No access to this student' });
     }
 
     const workingDaysRes = await pool.query(

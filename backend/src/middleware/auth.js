@@ -84,6 +84,10 @@ function verifyAdminOrFaculty(req, res, next) {
     if (decoded.type === 'faculty') {
       req.faculty = decoded;
       req.actor = { id: decoded.id, type: 'faculty', role: 'faculty' };
+    } else if (decoded.type === 'student') {
+      // Student tokens are never valid here — reject explicitly instead of
+      // silently falling through to the admin branch.
+      return res.status(403).json({ error: 'Invalid token type' });
     } else {
       req.admin = decoded;
       req.actor = { id: decoded.id, type: 'admin', role: decoded.role };

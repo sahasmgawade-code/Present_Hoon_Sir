@@ -202,7 +202,11 @@ async function listMyStudents(req, res) {
   }
 }
 
-// Edit a student's details
+// Edit a student's details.
+// Only fields actually present in the request body are updated — this lets
+// the caller distinguish "don't touch this field" (omit it) from
+// "clear this field" (send it as null or ""), which a COALESCE-based
+// update can't do.
 async function updateStudent(req, res) {
   const { studentId } = req.params;
   const { firstName, lastName, phone, email, parentPhone } = req.body;
@@ -215,16 +219,33 @@ async function updateStudent(req, res) {
       return res.status(403).json({ error: 'No access to this student' });
     }
 
+    const fieldMap = {
+      firstName: 'first_name',
+      lastName: 'last_name',
+      phone: 'phone',
+      email: 'email',
+      parentPhone: 'parent_phone',
+    };
+
+    const setClauses = [];
+    const values = [];
+    for (const [bodyKey, column] of Object.entries(fieldMap)) {
+      if (Object.prototype.hasOwnProperty.call(req.body, bodyKey)) {
+        values.push(req.body[bodyKey]);
+        setClauses.push(`${column} = $${values.length}`);
+      }
+    }
+
+    if (setClauses.length === 0) {
+      return res.status(400).json({ error: 'No fields provided to update' });
+    }
+
+    values.push(studentId);
     const result = await pool.query(
-      `UPDATE students SET
-        first_name = COALESCE($1, first_name),
-        last_name = COALESCE($2, last_name),
-        phone = COALESCE($3, phone),
-        email = COALESCE($4, email),
-        parent_phone = COALESCE($5, parent_phone)
-       WHERE id = $6
+      `UPDATE students SET ${setClauses.join(', ')}
+       WHERE id = $${values.length}
        RETURNING id, batch_id, urn, first_name, last_name, phone, email, parent_phone, is_blacklisted, login_id, created_at, created_by`,
-      [firstName, lastName, phone, email, parentPhone, studentId]
+      values
     );
 
     res.json({ student: result.rows[0] });
