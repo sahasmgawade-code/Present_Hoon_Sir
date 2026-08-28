@@ -7,7 +7,6 @@ import { StudentAuthProvider } from './context/StudentAuthContext.jsx';
 import { FacultyAuthProvider } from './context/FacultyAuthContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import './index.css';
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>

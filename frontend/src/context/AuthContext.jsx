@@ -1,14 +1,11 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { api } from '../api/client.js';
-
 const AuthContext = createContext(null);
-
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(() => {
     const stored = localStorage.getItem('phsams_admin');
     return stored ? JSON.parse(stored) : null;
   });
-
   const login = useCallback(async (email, password) => {
     const data = await api.login(email, password);
     localStorage.setItem('phsams_token', data.token);
@@ -16,13 +13,11 @@ export function AuthProvider({ children }) {
     setAdmin(data.admin);
     return data.admin;
   }, []);
-
   const logout = useCallback(() => {
     localStorage.removeItem('phsams_token');
     localStorage.removeItem('phsams_admin');
     setAdmin(null);
   }, []);
-
   const updateOwnName = useCallback((newName) => {
     setAdmin((prev) => {
       if (!prev) return prev;
@@ -31,7 +26,6 @@ export function AuthProvider({ children }) {
       return updated;
     });
   }, []);
-
   return (
     <AuthContext.Provider
       value={{ admin, login, logout, updateOwnName, isSuperAdmin: admin?.role === 'super_admin' }}
@@ -40,7 +34,6 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

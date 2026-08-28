@@ -10,7 +10,6 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -24,7 +23,6 @@ export default function Login() {
       setLoading(false);
     }
   }
-
   return (
     <div className="min-h-screen bg-transparent">
       <div className="flex items-center justify-center px-6 py-16">
@@ -34,7 +32,6 @@ export default function Login() {
             <Logo iconSize={56} textSize="text-3xl" />
           </div>
         </div>
-
         <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-8 space-y-5">
           <div>
             <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
@@ -62,13 +59,11 @@ export default function Login() {
               placeholder="••••••••"
             />
           </div>
-
           {error && (
             <p className="text-sm text-brick font-medium" role="alert">
               {error}
             </p>
           )}
-
           <button
             type="submit"
             disabled={loading}

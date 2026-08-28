@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStudentAuth } from '../context/StudentAuthContext.jsx';
-
 export default function StudentLogin() {
   const { login } = useStudentAuth();
   const navigate = useNavigate();
-
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -28,14 +25,12 @@ export default function StudentLogin() {
       setBusy(false);
     }
   }
-
   return (
     <div className="max-w-sm mx-auto mt-16 space-y-6 px-4">
       <div className="text-center">
         <h1 className="font-display text-3xl font-600">Student Login</h1>
         <p className="text-sm text-ink/50 mt-1">Check your batch & attendance status.</p>
       </div>
-
       <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <div>
           <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
@@ -60,9 +55,7 @@ export default function StudentLogin() {
             className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
           />
         </div>
-
         {error && <p className="text-sm text-brick font-medium">{error}</p>}
-
         <button
           type="submit"
           disabled={busy}
@@ -71,7 +64,6 @@ export default function StudentLogin() {
           {busy ? 'Logging in…' : 'Log In'}
         </button>
       </form>
-
       <p className="text-center text-xs text-ink/40">
         Admin? <Link to="/login" className="underline">Log in here</Link>
       </p>

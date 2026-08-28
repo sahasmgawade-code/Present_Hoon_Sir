@@ -2,30 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
-
 export default function AdminSettings() {
   const { id } = useParams();
   const adminId = Number(id);
   const navigate = useNavigate();
   const { admin: currentAdmin, updateOwnName } = useAuth();
-
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [editName, setEditName] = useState('');
   const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
-
   const [batchAccess, setBatchAccess] = useState([]);
   const [accessLoading, setAccessLoading] = useState(true);
   const [accessError, setAccessError] = useState('');
   const [togglingBatchId, setTogglingBatchId] = useState(null);
-
   const [togglingEmail, setTogglingEmail] = useState(false);
   const [togglingSms, setTogglingSms] = useState(false);
   const [busy, setBusy] = useState(false);
-
   function loadAdmin() {
     setLoading(true);
     setError('');
@@ -42,7 +36,6 @@ export default function AdminSettings() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
-
   function loadBatchAccess() {
     setAccessLoading(true);
     setAccessError('');
@@ -51,13 +44,10 @@ export default function AdminSettings() {
       .catch((err) => setAccessError(err.message))
       .finally(() => setAccessLoading(false));
   }
-
   useEffect(() => {
     loadAdmin();
     loadBatchAccess();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminId]);
-
   async function handleSaveEdit(e) {
     e.preventDefault();
     setEditError('');
@@ -78,7 +68,6 @@ export default function AdminSettings() {
       setSavingEdit(false);
     }
   }
-
   async function toggleBatchAccess(batch) {
     setTogglingBatchId(batch.id);
     setAccessError('');
@@ -97,7 +86,6 @@ export default function AdminSettings() {
       setTogglingBatchId(null);
     }
   }
-
   async function toggleEmail() {
     if (!admin) return;
     setTogglingEmail(true);
@@ -110,7 +98,6 @@ export default function AdminSettings() {
       setTogglingEmail(false);
     }
   }
-
   async function toggleSms() {
     if (!admin) return;
     setTogglingSms(true);
@@ -123,7 +110,6 @@ export default function AdminSettings() {
       setTogglingSms(false);
     }
   }
-
   async function handleDelete() {
     if (!admin) return;
     if (!window.confirm(`Remove admin ${admin.name}? This cannot be undone.`)) return;
@@ -136,11 +122,9 @@ export default function AdminSettings() {
       setBusy(false);
     }
   }
-
   if (loading) {
     return <p className="text-ink/50 font-mono text-sm">Loading…</p>;
   }
-
   if (error || !admin) {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
@@ -151,9 +135,7 @@ export default function AdminSettings() {
       </div>
     );
   }
-
   const isSuperAdmin = admin.role === 'super_admin';
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -168,7 +150,6 @@ export default function AdminSettings() {
         </div>
         <p className="text-sm text-ink/50 mt-1">{admin.email}</p>
       </div>
-
       {/* Edit Name */}
       <form onSubmit={handleSaveEdit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <h2 className="font-display text-xl">Name</h2>
@@ -189,7 +170,6 @@ export default function AdminSettings() {
         </div>
         {editError && <p className="text-sm text-brick font-medium">{editError}</p>}
       </form>
-
       {/* Batches */}
       {!isSuperAdmin && (
         <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
@@ -223,7 +203,6 @@ export default function AdminSettings() {
           {accessError && <p className="text-sm text-brick font-medium">{accessError}</p>}
         </div>
       )}
-
       {/* Email Updates */}
       <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -255,7 +234,6 @@ export default function AdminSettings() {
           />
         </button>
       </div>
-
       {/* SMS Updates */}
       <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -287,7 +265,6 @@ export default function AdminSettings() {
           />
         </button>
       </div>
-
       {/* Delete */}
       {!isSuperAdmin && adminId !== currentAdmin?.id && (
         <div className="bg-card border border-brick/40 rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap perforated">

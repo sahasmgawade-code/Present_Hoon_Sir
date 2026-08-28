@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-
 const emptyForm = { urn: '', firstName: '', lastName: '', phone: '', email: '', parentPhone: '', batchId: '' };
-
 function GearIcon({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -12,15 +10,12 @@ function GearIcon({ className }) {
     </svg>
   );
 }
-
 function StudentForm({ initial, batches, onCancel, onSubmit, submitLabel, error }) {
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
-
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true);
@@ -30,7 +25,6 @@ function StudentForm({ initial, batches, onCancel, onSubmit, submitLabel, error 
       setSaving(false);
     }
   }
-
   const fields = [
     ['urn', 'URN', true],
     ['firstName', 'First Name', true],
@@ -39,7 +33,6 @@ function StudentForm({ initial, batches, onCancel, onSubmit, submitLabel, error 
     ['email', 'Email', false],
     ['parentPhone', "Parent's Phone", false],
   ];
-
   return (
     <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -73,9 +66,7 @@ function StudentForm({ initial, batches, onCancel, onSubmit, submitLabel, error 
           </select>
         </div>
       </div>
-
       {error && <p className="text-sm text-brick font-medium">{error}</p>}
-
       <div className="flex gap-3">
         <button
           type="submit"
@@ -95,22 +86,18 @@ function StudentForm({ initial, batches, onCancel, onSubmit, submitLabel, error 
     </form>
   );
 }
-
 export default function Students() {
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [search, setSearch] = useState('');
   const [batchFilter, setBatchFilter] = useState('all'); // 'all' | 'unassigned' | batchId as string
   const [showAddForm, setShowAddForm] = useState(false);
   const [addError, setAddError] = useState('');
-
   useEffect(() => {
     api.listBatches().then((data) => setBatches(data.batches)).catch(() => {});
   }, []);
-
   const loadStudents = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -123,11 +110,9 @@ export default function Students() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     loadStudents();
   }, [loadStudents]);
-
   const batchOptions = useMemo(() => {
     const seen = new Map();
     for (const s of students) {
@@ -137,7 +122,6 @@ export default function Students() {
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [students]);
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return students.filter((s) => {
@@ -151,7 +135,6 @@ export default function Students() {
       return matchesSearch && matchesBatch;
     });
   }, [students, search, batchFilter]);
-
   async function handleAdd(form) {
     setAddError('');
     try {
@@ -164,9 +147,7 @@ export default function Students() {
         parentPhone: form.parentPhone,
         ...(form.batchId ? { batchId: Number(form.batchId) } : {}),
       };
-
       const result = await api.addStudentGeneral(payload);
-
       if (result?.requiresConfirmation) {
         const batchNames = result.existingBatches.map((b) => b.batchName).join(', ');
         const proceed = window.confirm(
@@ -175,22 +156,18 @@ export default function Students() {
         if (!proceed) return;
         await api.addStudentGeneral({ ...payload, confirmed: true });
       }
-
       setShowAddForm(false);
       await loadStudents();
     } catch (err) {
       setAddError(err.message || 'Could not add student.');
     }
   }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-3xl font-600">View Students</h1>
       </div>
-
       {error && <p className="text-brick font-medium">{error}</p>}
-
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex flex-wrap gap-3 flex-1 min-w-0">
           <input
@@ -222,7 +199,6 @@ export default function Students() {
           {showAddForm ? 'Close' : '+ Add Student'}
         </button>
       </div>
-
       {showAddForm && (
         <StudentForm
           initial={emptyForm}
@@ -233,7 +209,6 @@ export default function Students() {
           error={addError}
         />
       )}
-
       {loading ? (
         <p className="text-ink/50 font-mono text-sm">Loading…</p>
       ) : filtered.length === 0 ? (

@@ -2,21 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-
 export default function Settings() {
   const { theme, toggleTheme } = useTheme();
   const { isSuperAdmin } = useAuth();
-
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
-
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [showPwForm, setShowPwForm] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
-
   useEffect(() => {
     if (isSuperAdmin) {
       setProfileLoading(false);
@@ -27,17 +23,14 @@ export default function Settings() {
       .catch((err) => setProfileError(err.message || 'Could not load profile.'))
       .finally(() => setProfileLoading(false));
   }, [isSuperAdmin]);
-
   async function handleChangePassword(e) {
     e.preventDefault();
     setPwError('');
     setPwSuccess('');
-
     if (pwForm.newPassword !== pwForm.confirmPassword) {
       setPwError('New password and confirmation do not match.');
       return;
     }
-
     setPwSaving(true);
     try {
       await api.changePassword(pwForm.currentPassword, pwForm.newPassword);
@@ -50,11 +43,9 @@ export default function Settings() {
       setPwSaving(false);
     }
   }
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="font-display text-3xl font-600">Settings</h1>
-
       {/* Appearance */}
       <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -71,7 +62,6 @@ export default function Settings() {
           Switch to {theme === 'dark' ? 'Light' : 'Dark'} Mode
         </button>
       </div>
-
       {/* Change Password */}
       <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -93,7 +83,6 @@ export default function Settings() {
             {showPwForm ? 'Cancel' : 'Change Password'}
           </button>
         </div>
-
         {showPwForm && (
         <form onSubmit={handleChangePassword} className="space-y-4">
         <div>
@@ -146,7 +135,6 @@ export default function Settings() {
         </form>
         )}
       </div>
-
       {/* Notification status (read-only) — not shown for super admins, who
           manage this from the Manage Admins page instead */}
       {isSuperAdmin ? null : profileLoading ? (
@@ -174,7 +162,6 @@ export default function Settings() {
               {profile.email_notifications_enabled ? 'Enabled' : 'Disabled'}
             </span>
           </div>
-
           <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h2 className="font-display text-xl">SMS Updates</h2>
@@ -194,7 +181,6 @@ export default function Settings() {
               {profile.sms_notifications_enabled ? 'Enabled' : 'Disabled'}
             </span>
           </div>
-
           <p className="text-xs text-ink/40">
             Email &amp; SMS notification settings can only be changed by a super admin.
           </p>

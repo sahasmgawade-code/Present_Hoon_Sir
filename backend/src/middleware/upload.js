@@ -1,6 +1,4 @@
 const multer = require('multer');
-
-// Faculty posting an assignment — PDF only, per the spec
 const pdfOnlyUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
@@ -11,8 +9,6 @@ const pdfOnlyUpload = multer({
     cb(null, true);
   },
 });
-
-// Student submitting completed work — allow common document/image/archive types
 const ALLOWED_SUBMISSION_TYPES = [
   'application/pdf',
   'application/msword',
@@ -24,7 +20,6 @@ const ALLOWED_SUBMISSION_TYPES = [
   'image/jpeg',
   'image/png',
 ];
-
 const submissionUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
@@ -35,9 +30,6 @@ const submissionUpload = multer({
     cb(null, true);
   },
 });
-
-// Wraps multer's .single() so errors (wrong type, too large, no file) come back
-// as clean JSON instead of multer's default behavior.
 function uploadSingle(multerInstance, fieldName) {
   return (req, res, next) => {
     multerInstance.single(fieldName)(req, res, (err) => {
@@ -47,7 +39,6 @@ function uploadSingle(multerInstance, fieldName) {
     });
   };
 }
-
 module.exports = {
   uploadAssignmentPdf: uploadSingle(pdfOnlyUpload, 'file'),
   uploadSubmissionFile: uploadSingle(submissionUpload, 'file'),

@@ -1,6 +1,4 @@
 import React from 'react';
-
-// Simple SVG donut chart, no charting library needed.
 export default function AttendancePie({ percentage, size = 120 }) {
   const stroke = 14;
   const radius = (size - stroke) / 2;
@@ -8,7 +6,6 @@ export default function AttendancePie({ percentage, size = 120 }) {
   const clamped = Math.max(0, Math.min(100, percentage));
   const dash = (clamped / 100) * circumference;
   const color = clamped < 75 ? 'rgb(var(--color-brick))' : 'rgb(var(--color-forest))';
-
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle

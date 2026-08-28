@@ -30,9 +30,7 @@ export default function Dashboard() {
         setError(err.message);
         setLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showArchived]);
-
   const loadBatchData = useCallback(async (id) => {
     setLoading(true);
     setError('');
@@ -49,11 +47,9 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     if (batchId) loadBatchData(batchId);
   }, [batchId, loadBatchData]);
-
   async function handleArchiveBatch() {
     if (!batchId) return;
     if (!window.confirm('Archive this batch? It will be hidden from your active batches, but all data (students, attendance, QR history) will be preserved. You can restore it anytime.')) return;
@@ -66,7 +62,6 @@ export default function Dashboard() {
       alert(err.message);
     }
   }
-
   async function handleRestoreBatch(id) {
     try {
       await api.restoreBatch(id);
@@ -76,7 +71,6 @@ export default function Dashboard() {
       alert(err.message);
     }
   }
-
   const presentCount = today?.students.filter((s) => s.status === 'present').length ?? 0;
   const absentStudents = today?.students.filter((s) => s.status === 'absent') ?? [];
   const totalStudents = today?.students.length ?? 0;
@@ -86,7 +80,6 @@ export default function Dashboard() {
     overallStats.length > 0
       ? Math.round((overallStats.reduce((sum, s) => sum + s.percentage, 0) / overallStats.length) * 10) / 10
       : null;
-
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -121,16 +114,13 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
-
       {batches.length === 0 && !loading && (
         <div className="text-center py-16">
           <p className="font-display text-2xl text-ink/70 mb-2">No batches yet</p>
           <p className="text-sm text-ink/50">Click "+ Add Batch" above to create your first one.</p>
         </div>
       )}
-
       {error && <p className="text-brick font-medium">{error}</p>}
-
       {loading ? (
         <p className="text-ink/50 font-mono text-sm">Loading…</p>
       ) : (
@@ -148,7 +138,6 @@ export default function Dashboard() {
               </button>
             </div>
           )}
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-card border border-rule rounded-lg p-5">
               <p className="text-xs font-mono uppercase tracking-wide text-ink/50 mb-1">Present Today</p>
@@ -167,7 +156,6 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-
           {attendanceMarkedToday && (
             <div className="bg-card border border-rule rounded-lg p-5">
               <p className="text-xs font-mono uppercase tracking-wide text-ink/50 mb-3">Absent Students</p>
@@ -185,7 +173,6 @@ export default function Dashboard() {
               )}
             </div>
           )}
-
           <div className="perforated pt-6 mt-10">
             <p className="text-xs font-mono uppercase tracking-wide text-brick mb-3">Danger Zone</p>
             <div className="flex flex-wrap gap-3">

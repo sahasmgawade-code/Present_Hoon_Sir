@@ -22,7 +22,6 @@ const features = [
     desc: 'Pull attendance reports by batch or date range and export to CSV/Excel for university records in one click.',
   },
 ];
-
 const audience = [
   {
     title: 'College & university admins',
@@ -37,14 +36,10 @@ const audience = [
     desc: 'Mark your own attendance by scanning a QR code at the start of class, from your own phone.',
   },
 ];
-
 export default function Landing() {
   const { admin } = useAuth();
   const [showContact, setShowContact] = useState(false);
-
-  // Logged-in users should land on their dashboard, not the marketing page.
   if (admin) return <Navigate to="/dashboard" replace />;
-
   return (
     <div className="min-h-screen bg-transparent">
       {/* Header */}
@@ -67,7 +62,6 @@ export default function Landing() {
           </div>
         </div>
       </header>
-
       {/* Hero */}
       <section className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
         <p className="font-mono text-xs tracking-widest uppercase text-brick mb-4">
@@ -97,7 +91,6 @@ export default function Landing() {
           </a>
         </div>
       </section>
-
       {/* Features */}
       <section id="features" className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
         <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
@@ -117,7 +110,6 @@ export default function Landing() {
           ))}
         </div>
       </section>
-
       {/* Who it's for */}
       <section className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
         <h2 className="font-display text-3xl font-600 text-ink text-center mb-12">
@@ -134,7 +126,6 @@ export default function Landing() {
           ))}
         </div>
       </section>
-
       {/* CTA */}
       <section className="max-w-4xl mx-auto px-6 py-20 text-center border-t border-rule">
         <h2 className="font-display text-3xl font-600 text-ink mb-4">
@@ -150,7 +141,6 @@ export default function Landing() {
           Admin Login
         </Link>
       </section>
-
       <Footer />
       {showContact && <ContactModal onClose={() => setShowContact(false)} />}
     </div>

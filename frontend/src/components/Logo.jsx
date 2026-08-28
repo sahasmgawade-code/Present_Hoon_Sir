@@ -1,5 +1,4 @@
 import React from 'react';
-
 export function LogoMark({ size = 40 }) {
   return (
     <svg
@@ -25,7 +24,6 @@ export function LogoMark({ size = 40 }) {
     </svg>
   );
 }
-
 export default function Logo({ iconSize = 40, textSize = 'text-2xl', showTagline = false, showSubtitle = true }) {
   return (
     <div className="flex items-center gap-2">

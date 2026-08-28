@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { api } from '../api/client.js';
-
 export default function ContactModal({ onClose }) {
   const [form, setForm] = useState({
     name: '',
@@ -11,11 +10,9 @@ export default function ContactModal({ onClose }) {
   });
   const [status, setStatus] = useState('idle'); // idle | submitting | success | error
   const [error, setError] = useState('');
-
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
-
   async function handleSubmit(e) {
     e.preventDefault();
     setStatus('submitting');
@@ -28,7 +25,6 @@ export default function ContactModal({ onClose }) {
       setStatus('error');
     }
   }
-
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center z-50 px-4 py-10 overflow-y-auto">
       <div className="bg-card rounded-lg border border-rule max-w-md w-full h-fit p-6 relative mt-4">
@@ -39,7 +35,6 @@ export default function ContactModal({ onClose }) {
         >
           &times;
         </button>
-
         {status === 'success' ? (
           <div className="text-center py-6">
             <h3 className="font-display text-xl font-600 text-forestDark mb-2">
@@ -58,7 +53,6 @@ export default function ContactModal({ onClose }) {
         ) : (
           <form onSubmit={handleSubmit}>
             <h3 className="font-display text-xl font-600 text-ink mb-4">Contact Us</h3>
-
             <div className="space-y-3">
               <input
                 type="text"
@@ -104,11 +98,9 @@ export default function ContactModal({ onClose }) {
                 className="w-full border border-rule rounded px-3 py-2 text-sm bg-transparent resize-none"
               />
             </div>
-
             {status === 'error' && (
               <p className="text-red-600 text-sm mt-3">{error}</p>
             )}
-
             <button
               type="submit"
               disabled={status === 'submitting'}

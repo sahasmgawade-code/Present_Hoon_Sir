@@ -2,37 +2,29 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const { uploadSubmissionFile, deleteFile } = require('../utils/googleDrive');
-
-// Public: student logs in with their Login ID + password
 async function studentLogin(req, res) {
   const { loginId, password } = req.body;
-
   if (!loginId || !password) {
     return res.status(400).json({ error: 'loginId and password are required' });
   }
-
   try {
     const result = await pool.query(
       'SELECT id, batch_id, first_name, last_name, urn, password_hash FROM students WHERE login_id = $1',
       [loginId.trim()]
     );
     const student = result.rows[0];
-
     if (!student || !student.password_hash) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     const isMatch = await bcrypt.compare(password, student.password_hash);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
     const token = jwt.sign(
       { studentId: student.id, batchId: student.batch_id, type: 'student' },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
-
     res.json({
       token,
       student: {
@@ -47,11 +39,8 @@ async function studentLogin(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
-// Protected (student token): own batch + attendance status
 async function getMyAttendance(req, res) {
   const { studentId, batchId } = req.student;
-
   try {
     const studentRes = await pool.query(
       `SELECT s.id, s.urn, s.first_name, s.last_name, s.is_blacklisted,
@@ -63,13 +52,11 @@ async function getMyAttendance(req, res) {
     );
     if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
     const student = studentRes.rows[0];
-
     const workingDaysRes = await pool.query(
       'SELECT COUNT(DISTINCT date) AS total FROM attendance WHERE batch_id = $1',
       [batchId]
     );
     const totalWorkingDays = parseInt(workingDaysRes.rows[0].total, 10) || 0;
-
     const historyRes = await pool.query(
       `SELECT date, status, method, marked_at
        FROM attendance
@@ -77,7 +64,6 @@ async function getMyAttendance(req, res) {
        ORDER BY date DESC`,
       [studentId, batchId]
     );
-
     const presentCount = historyRes.rows.filter((r) => r.status === 'present').length;
     const percentage = totalWorkingDays > 0
       ? Math.round((presentCount / totalWorkingDays) * 10000) / 100
@@ -105,9 +91,6 @@ async function getMyAttendance(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
-// Protected (student token): list assignments for the student's own batch,
-// each annotated with the student's own submission (if any)
 async function getMyAssignments(req, res) {
   const { studentId, batchId } = req.student;
   try {
@@ -131,12 +114,9 @@ async function getMyAssignments(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
-// Protected (student token): submit (or resubmit) completed work for an assignment
 async function submitAssignment(req, res) {
   const { studentId, batchId } = req.student;
   const { assignmentId } = req.params;
-
   try {
     const assignmentRes = await pool.query(
       `SELECT a.id, a.title, a.batch_id, b.name AS batch_name
@@ -147,12 +127,9 @@ async function submitAssignment(req, res) {
     );
     if (assignmentRes.rows.length === 0) return res.status(404).json({ error: 'Assignment not found' });
     const assignment = assignmentRes.rows[0];
-
     if (assignment.batch_id !== batchId) {
       return res.status(403).json({ error: 'This assignment is not for your batch' });
     }
-
-    // if a previous submission exists, remove its old Drive file before replacing
     const existing = await pool.query(
       'SELECT drive_file_id FROM assignment_submissions WHERE assignment_id = $1 AND student_id = $2',
       [assignmentId, studentId]
@@ -160,7 +137,6 @@ async function submitAssignment(req, res) {
     if (existing.rows.length > 0) {
       await deleteFile(existing.rows[0].drive_file_id);
     }
-
     const { fileId, webViewLink } = await uploadSubmissionFile({
       batchId: assignment.batch_id,
       batchName: assignment.batch_name,
@@ -170,7 +146,6 @@ async function submitAssignment(req, res) {
       mimeType: req.file.mimetype,
       buffer: req.file.buffer,
     });
-
     const result = await pool.query(
       `INSERT INTO assignment_submissions (assignment_id, student_id, drive_file_id, drive_file_url, file_name, status, remark, submitted_at, reviewed_at)
        VALUES ($1, $2, $3, $4, $5, 'pending', NULL, now(), NULL)
@@ -180,12 +155,10 @@ async function submitAssignment(req, res) {
        RETURNING *`,
       [assignmentId, studentId, fileId, webViewLink, req.file.originalname]
     );
-
     res.json({ submission: result.rows[0] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
   }
 }
-
 module.exports = { studentLogin, getMyAttendance, getMyAssignments, submitAssignment };

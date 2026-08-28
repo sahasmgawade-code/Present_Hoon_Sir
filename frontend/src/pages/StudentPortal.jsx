@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useStudentAuth } from '../context/StudentAuthContext.jsx';
-
 const STATUS_LABEL = { pending: 'Pending Review', completed: 'Completed', incomplete: 'Incomplete' };
 const STATUS_STYLE = {
   pending: 'bg-ink/10 text-ink/60',
   completed: 'bg-forestGlass/20 text-forestDark',
   incomplete: 'bg-brickGlass/20 text-brick',
 };
-
 function AssignmentsTab() {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +14,6 @@ function AssignmentsTab() {
   const [files, setFiles] = useState({});
   const [submittingId, setSubmittingId] = useState(null);
   const [submitError, setSubmitError] = useState({});
-
   function load() {
     setLoading(true);
     api.getMyAssignments()
@@ -24,9 +21,7 @@ function AssignmentsTab() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
-
   useEffect(load, []);
-
   async function handleSubmit(assignmentId) {
     const file = files[assignmentId];
     if (!file) {
@@ -46,7 +41,6 @@ function AssignmentsTab() {
       setSubmittingId(null);
     }
   }
-
   if (loading) return <p className="text-ink/50 font-mono text-sm">Loading…</p>;
   if (error) return <p className="text-sm text-brick font-medium">{error}</p>;
   if (assignments.length === 0) {
@@ -56,7 +50,6 @@ function AssignmentsTab() {
       </div>
     );
   }
-
   return (
     <div className="space-y-3">
       {assignments.map((a) => (
@@ -74,7 +67,6 @@ function AssignmentsTab() {
               View PDF
             </a>
           </div>
-
           {a.submission_id ? (
             <div className="flex items-center gap-2 flex-wrap text-sm">
               <span className={`text-xs font-mono uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[a.status]}`}>
@@ -88,7 +80,6 @@ function AssignmentsTab() {
           ) : (
             <p className="text-xs text-ink/40 font-mono uppercase">Not submitted yet</p>
           )}
-
           <div className="flex items-center gap-2 flex-wrap">
             <input
               type="file"
@@ -109,25 +100,21 @@ function AssignmentsTab() {
     </div>
   );
 }
-
 export default function StudentPortal() {
   const { logout } = useStudentAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('attendance');
-
   useEffect(() => {
     api.getMyAttendance()
       .then(setData)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
-
   if (loading) {
     return <p className="text-ink/50 font-mono text-sm text-center mt-16">Loading…</p>;
   }
-
   if (error || !data) {
     return (
       <div className="max-w-lg mx-auto mt-16 text-center space-y-4">
@@ -136,7 +123,6 @@ export default function StudentPortal() {
       </div>
     );
   }
-
   return (
     <div className="max-w-2xl mx-auto mt-10 space-y-6 px-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -153,13 +139,11 @@ export default function StudentPortal() {
           Log Out
         </button>
       </div>
-
       {data.student.isBlacklisted && (
         <div className="bg-brickGlass/10 border border-brick/40 rounded-lg p-4 text-sm text-brick font-medium">
           Your account is currently blacklisted. Contact your batch admin for details.
         </div>
       )}
-
       <div className="flex gap-2 border-b border-rule">
         {['attendance', 'assignments'].map((t) => (
           <button
@@ -173,14 +157,12 @@ export default function StudentPortal() {
           </button>
         ))}
       </div>
-
       {tab === 'attendance' ? (
         <>
           <div className="bg-card border border-rule rounded-lg p-6">
             <h2 className="font-display text-xl mb-1">Enrolled Batch</h2>
             <p className="text-ink/70">{data.batch.name}</p>
           </div>
-
           <div className="bg-card border border-rule rounded-lg p-6 grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-2xl font-display font-600">{data.percentage}%</p>
@@ -195,7 +177,6 @@ export default function StudentPortal() {
               <p className="text-xs text-ink/50 mt-1 font-mono uppercase">Working Days</p>
             </div>
           </div>
-
           <div className="bg-card border border-rule rounded-lg divide-y divide-rule overflow-hidden">
             <div className="p-4 font-display text-xl">Attendance History</div>
             {data.history.length === 0 ? (

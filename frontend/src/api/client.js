@@ -1,5 +1,4 @@
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
-
 function getToken() {
   return localStorage.getItem('phsams_token');
 }
@@ -17,13 +16,11 @@ function getDeviceToken() {
   }
   return deviceToken;
 }
-
 function tokenFor(authType) {
   if (authType === 'student') return getStudentToken();
   if (authType === 'faculty') return getFacultyToken();
   return getToken();
 }
-
 async function request(path, { method = 'GET', body, headers = {}, raw = false, authType = 'admin' } = {}) {
   const token = tokenFor(authType);
   const res = await fetch(`${BASE}${path}`, {
@@ -35,16 +32,12 @@ async function request(path, { method = 'GET', body, headers = {}, raw = false, 
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-
   if (raw) return res; // caller handles the response itself (e.g. file download)
-
   let data = null;
   try {
     data = await res.json();
   } catch {
-    // no JSON body
   }
-
   if (!res.ok) {
     const message = data?.error || `Request failed (${res.status})`;
     const err = new Error(message);
@@ -53,9 +46,6 @@ async function request(path, { method = 'GET', body, headers = {}, raw = false, 
   }
   return data;
 }
-
-// For multipart/form-data uploads (assignment PDFs, submission files) — the
-// browser sets the Content-Type boundary itself, so it must NOT be set here.
 async function requestForm(path, formData, { method = 'POST', authType = 'admin' } = {}) {
   const token = tokenFor(authType);
   const res = await fetch(`${BASE}${path}`, {
@@ -65,14 +55,11 @@ async function requestForm(path, formData, { method = 'POST', authType = 'admin'
     },
     body: formData,
   });
-
   let data = null;
   try {
     data = await res.json();
   } catch {
-    // no JSON body
   }
-
   if (!res.ok) {
     const message = data?.error || `Request failed (${res.status})`;
     const err = new Error(message);
@@ -81,7 +68,6 @@ async function requestForm(path, formData, { method = 'POST', authType = 'admin'
   }
   return data;
 }
-
 export const api = {
   login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password } }),
   changePassword: (currentPassword, newPassword) =>
@@ -133,7 +119,6 @@ export const api = {
   getAttendanceForDate: (batchId, date) => request(`/attendance/batch/${batchId}?date=${date}`),
   saveAttendance: (batchId, date, records) =>
     request(`/attendance/batch/${batchId}`, { method: 'POST', body: { date, records } }),
-
   generateQrSession: (batchId) => request(`/qr/batch/${batchId}/generate`, { method: 'POST' }),
   getQrSessionStatus: (token) => request(`/qr/${token}/status`),
   submitQrAttendance: (token, payload) => request(`/qr/${token}/submit`, { method: 'POST', body: payload }),
@@ -152,8 +137,6 @@ export const api = {
     return request(`/reports/batch/${batchId}/matrix${qs ? `?${qs}` : ''}`);
   },
   getStudentReport: (studentId) => request(`/reports/student/${studentId}`),
-
-  // --- Faculty auth (faculty portal login) ---
   facultyLogin: (email, password) =>
     request('/faculty-auth/login', { method: 'POST', body: { email, password } }),
   verifyFacultyResetToken: (token) => request(`/faculty-auth/verify-reset-token/${token}`),
@@ -165,8 +148,6 @@ export const api = {
       body: { currentPassword, newPassword },
       authType: 'faculty',
     }),
-
-  // --- Faculty management (admin side) ---
   listFaculties: () => request('/faculties'),
   createFaculty: (payload) => request('/faculties', { method: 'POST', body: payload }),
   updateFaculty: (id, name) => request(`/faculties/${id}`, { method: 'PUT', body: { name } }),
@@ -182,8 +163,6 @@ export const api = {
     request(`/faculties/${facultyId}/batches`, { method: 'POST', body: { batchId } }),
   revokeBatchFromFaculty: (facultyId, batchId) =>
     request(`/faculties/${facultyId}/batches/${batchId}`, { method: 'DELETE' }),
-
-  // --- Faculty portal (faculty-facing) ---
   getMyFacultyBatches: () => request('/faculty-portal/batches', { authType: 'faculty' }),
   getFacultyBatchStudents: (batchId) =>
     request(`/faculty-portal/batches/${batchId}/students`, { authType: 'faculty' }),
@@ -205,7 +184,6 @@ async function triggerFileDownload(response) {
   const disposition = response.headers.get('Content-Disposition') || '';
   const match = disposition.match(/filename="([^"]+)"/);
   const filename = match ? match[1] : 'attendance.csv';
-
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

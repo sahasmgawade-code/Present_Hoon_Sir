@@ -1,28 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-
 export default function FacultySettings() {
   const { id } = useParams();
   const facultyId = Number(id);
   const navigate = useNavigate();
-
   const [faculty, setFaculty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [editName, setEditName] = useState('');
   const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
-
   const [batchAccess, setBatchAccess] = useState([]);
   const [accessLoading, setAccessLoading] = useState(true);
   const [accessError, setAccessError] = useState('');
   const [togglingBatchId, setTogglingBatchId] = useState(null);
-
   const [togglingActive, setTogglingActive] = useState(false);
   const [busy, setBusy] = useState(false);
-
   function loadFaculty() {
     setLoading(true);
     setError('');
@@ -39,7 +33,6 @@ export default function FacultySettings() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
-
   function loadBatchAccess() {
     setAccessLoading(true);
     setAccessError('');
@@ -48,13 +41,11 @@ export default function FacultySettings() {
       .catch((err) => setAccessError(err.message))
       .finally(() => setAccessLoading(false));
   }
-
   useEffect(() => {
     loadFaculty();
     loadBatchAccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facultyId]);
-
   async function handleSaveEdit(e) {
     e.preventDefault();
     setEditError('');
@@ -72,7 +63,6 @@ export default function FacultySettings() {
       setSavingEdit(false);
     }
   }
-
   async function toggleBatchAccess(batch) {
     setTogglingBatchId(batch.id);
     setAccessError('');
@@ -91,7 +81,6 @@ export default function FacultySettings() {
       setTogglingBatchId(null);
     }
   }
-
   async function toggleActive() {
     if (!faculty) return;
     setTogglingActive(true);
@@ -104,7 +93,6 @@ export default function FacultySettings() {
       setTogglingActive(false);
     }
   }
-
   async function handleDelete() {
     if (!faculty) return;
     if (!window.confirm(`Remove faculty ${faculty.name}? This cannot be undone.`)) return;
@@ -117,11 +105,9 @@ export default function FacultySettings() {
       setBusy(false);
     }
   }
-
   if (loading) {
     return <p className="text-ink/50 font-mono text-sm">Loading…</p>;
   }
-
   if (error || !faculty) {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
@@ -132,7 +118,6 @@ export default function FacultySettings() {
       </div>
     );
   }
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -149,7 +134,6 @@ export default function FacultySettings() {
         </div>
         <p className="text-sm text-ink/50 mt-1">{faculty.email}</p>
       </div>
-
       <form onSubmit={handleSaveEdit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <h2 className="font-display text-xl">Name</h2>
         <div className="flex items-center gap-3 flex-wrap">
@@ -169,7 +153,6 @@ export default function FacultySettings() {
         </div>
         {editError && <p className="text-sm text-brick font-medium">{editError}</p>}
       </form>
-
       <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <h2 className="font-display text-xl">Batches</h2>
         {accessLoading ? (
@@ -195,7 +178,6 @@ export default function FacultySettings() {
         )}
         {accessError && <p className="text-sm text-brick font-medium">{accessError}</p>}
       </div>
-
       <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="font-display text-xl">Account Status</h2>
@@ -224,7 +206,6 @@ export default function FacultySettings() {
           />
         </button>
       </div>
-
       <div className="bg-card border border-brick/40 rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap perforated">
         <div>
           <h2 className="font-display text-xl text-brick">Danger Zone</h2>

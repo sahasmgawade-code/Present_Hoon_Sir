@@ -1,19 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const {
-  addStudent,
-  listStudents,
-  listMyStudents,
-  updateStudent,
-  deleteStudent,
-  setBlacklist,
-  setStudentCredentials,
-  getStudentById,
-} = require('../controllers/studentController');
+const {addStudent, listStudents, listMyStudents, updateStudent, deleteStudent, setBlacklist, setStudentCredentials, getStudentById} = require('../controllers/studentController');
 const { verifyToken, requireRole } = require('../middleware/auth');
-
 router.use(verifyToken);
-
 router.get('/mine', listMyStudents);
 router.get('/batch/:batchId', listStudents);
 router.post('/batch/:batchId', addStudent);
@@ -23,5 +12,4 @@ router.put('/:studentId', updateStudent);
 router.delete('/:studentId', deleteStudent);
 router.patch('/:studentId/blacklist', setBlacklist);
 router.patch('/:studentId/credentials', setStudentCredentials);
-
 module.exports = router;

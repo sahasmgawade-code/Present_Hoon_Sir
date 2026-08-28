@@ -7,13 +7,11 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { todayIST } from '../utils/date.js';
-
 const PHS_BRAND = {
   bg: [35, 79, 56],       // #234F38 forestDark
   gold: [184, 132, 46],   // #B8842E brick/gold
   cream: [239, 238, 230], // #EFEEE6 paper
 };
-
 function drawPhsLogoMark(doc, x, y, size) {
   const s = size / 140; // scale factor from the 140x140 Logo.jsx viewBox
   doc.setFillColor(...PHS_BRAND.bg);
@@ -29,35 +27,29 @@ function drawPhsLogoMark(doc, x, y, size) {
   doc.line(x + 24 * s, y + 80 * s, x + 52 * s, y + 108 * s);
   doc.line(x + 52 * s, y + 108 * s, x + 118 * s, y + 34 * s);
 }
-
 function addPhsHeader(doc, reportTitle, subtitleLines = []) {
   const logoSize = 12;
   const logoX = 14;
   const logoY = 10;
   drawPhsLogoMark(doc, logoX, logoY, logoSize);
-
   const textX = logoX + logoSize + 4;
   doc.setFont(undefined, 'bold');
   doc.setFontSize(13);
   doc.setTextColor(35, 79, 56);
   doc.text('Present Hoon Sir!', textX, logoY + 5.5);
-
   doc.setFont(undefined, 'normal');
   doc.setFontSize(8);
   doc.setTextColor(120, 120, 110);
   doc.text('PHS-AMS - Attendance Management System', textX, logoY + 10.5);
-
   doc.setDrawColor(220, 218, 205);
   doc.setLineWidth(0.4);
   doc.line(14, logoY + logoSize + 4, 196, logoY + logoSize + 4);
-
   let cursorY = logoY + logoSize + 13;
   doc.setFont(undefined, 'bold');
   doc.setFontSize(15);
   doc.setTextColor(20, 20, 18);
   doc.text(reportTitle, 14, cursorY);
   cursorY += 7;
-
   doc.setFont(undefined, 'normal');
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 55);
@@ -65,10 +57,8 @@ function addPhsHeader(doc, reportTitle, subtitleLines = []) {
     doc.text(line, 14, cursorY);
     cursorY += 6;
   });
-
   return cursorY + 2; // Y position where table content should start
 }
-
 function addPhsFooter(doc) {
   const pageCount = doc.internal.getNumberOfPages();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -88,7 +78,6 @@ function addPhsFooter(doc) {
 function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail }) {
   const isOpen = expandedId === s.studentId;
   const absentDates = detail ? detail.history.filter((h) => h.status === 'absent').map((h) => h.date) : [];
-
   function downloadStudentPdf() {
     if (!detail) return;
     const doc = new jsPDF();
@@ -101,17 +90,14 @@ function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail 
         `Present: ${detail.presentCount} / ${detail.totalWorkingDays}  (${detail.percentage}%)`,
       ]
     );
-
     autoTable(doc, {
       startY,
       head: [['Date', 'Status', 'Method']],
       body: detail.history.map((h) => [h.date, h.status, h.method || '-']),
     });
-
     addPhsFooter(doc);
     doc.save(`${detail.student.urn}-attendance.pdf`);
   }
-
   return (
     <div>
       <div className="p-4 flex items-center justify-between flex-wrap gap-3">
@@ -136,7 +122,6 @@ function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail 
           </button>
         </div>
       </div>
-
       {isOpen && (
         <div className="px-4 pb-4">
           {loadingDetail ? (
@@ -158,7 +143,6 @@ function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail 
                   Download PDF
                 </button>
               </div>
-
               <div>
                 <p className="text-xs font-mono uppercase tracking-wide text-ink/50 mb-2">
                   Absent Dates ({absentDates.length})
@@ -184,7 +168,6 @@ function StudentRow({ s, batchName, expandedId, onToggle, detail, loadingDetail 
     </div>
   );
 }
-
 function CollapsibleSection({ title, colorClass, count, children, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -200,11 +183,9 @@ function CollapsibleSection({ title, colorClass, count, children, defaultOpen })
     </div>
   );
 }
-
 function DownloadDropdown({ label, onPdf, onExcel, disabled }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
   useEffect(() => {
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
@@ -212,7 +193,6 @@ function DownloadDropdown({ label, onPdf, onExcel, disabled }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
   return (
     <div className="relative inline-block" ref={ref}>
       <button
@@ -242,7 +222,6 @@ function DownloadDropdown({ label, onPdf, onExcel, disabled }) {
     </div>
   );
 }
-
 export default function Reports() {
   const navigate = useNavigate();
   const [batches, setBatches] = useState([]);
@@ -251,11 +230,9 @@ export default function Reports() {
   const [today, setToday] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [expandedId, setExpandedId] = useState(null);
   const [detailCache, setDetailCache] = useState({});
   const [loadingDetailId, setLoadingDetailId] = useState(null);
-
   const [rangeStart, setRangeStart] = useState('');
   const [rangeEnd, setRangeEnd] = useState('');
   const [rangeDownloading, setRangeDownloading] = useState(false);
@@ -275,9 +252,7 @@ export default function Reports() {
         setError(err.message);
         setLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const loadReport = useCallback(async (id) => {
     setLoading(true);
     setError('');
@@ -296,11 +271,9 @@ export default function Reports() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     if (batchId) loadReport(batchId);
   }, [batchId, loadReport]);
-
   async function handleToggle(studentId) {
     if (expandedId === studentId) {
       setExpandedId(null);
@@ -319,14 +292,12 @@ export default function Reports() {
       }
     }
   }
-
   function buildPdf(reportData, batchName, subtitle) {
     const doc = new jsPDF();
     const headerEndY = addPhsHeader(doc, `Attendance Report — ${batchName}`, [
       subtitle,
       `Total working days: ${reportData.totalWorkingDays}`,
     ]);
-
     doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
     doc.setTextColor(20, 20, 18);
@@ -339,7 +310,6 @@ export default function Reports() {
       ]),
       headStyles: { fillColor: [166, 67, 47] },
     });
-
     const afterDefaulters = doc.lastAutoTable.finalY + 10;
     doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
@@ -353,18 +323,15 @@ export default function Reports() {
       ]),
       headStyles: { fillColor: [47, 111, 79] },
     });
-
     addPhsFooter(doc);
     return doc;
   }
-
   function downloadBatchPdf() {
     if (!report) return;
     const batchName = batches.find((b) => b.id === batchId)?.name || 'Batch';
     const doc = buildPdf(report, batchName, 'Full record (all time)');
     doc.save(`${batchName}-attendance-report-full.pdf`);
   }
-
   async function downloadRangePdf() {
     if (!rangeStart || !rangeEnd) {
       setRangeError('Pick both a start and end date.');
@@ -387,7 +354,6 @@ export default function Reports() {
       setRangeDownloading(false);
     }
   }
-
 function buildExcelWorkbook(matrixData) {
     const { dates, students } = matrixData;
     const header = ['URN', 'Name', ...dates, 'Attendance (%)'];
@@ -400,7 +366,6 @@ function buildExcelWorkbook(matrixData) {
       });
       return [s.urn, `${s.firstName} ${s.lastName}`, ...dateCells, s.percentage];
     });
-
     const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
     worksheet['!cols'] = [
       { wch: 12 },
@@ -412,7 +377,6 @@ function buildExcelWorkbook(matrixData) {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
     return workbook;
   }
-
   async function downloadBatchExcel() {
     if (!report) return;
     const batchName = batches.find((b) => b.id === batchId)?.name || 'Batch';
@@ -424,7 +388,6 @@ function buildExcelWorkbook(matrixData) {
       setError(err.message || 'Could not generate Excel report.');
     }
   }
-
   async function downloadRangeExcel() {
     if (!rangeStart || !rangeEnd) {
       setRangeError('Pick both a start and end date.');
@@ -447,25 +410,21 @@ function buildExcelWorkbook(matrixData) {
       setRangeDownloading(false);
     }
   }
-
   const absentToday = today?.students.filter((s) => s.status === 'absent') ?? [];
   const attendanceMarkedToday = today?.students.some((s) => s.method) ?? false;
   const overallStats = report ? [...report.goodStanding, ...report.defaulters] : [];
-
   function matchesSearch(s) {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toLowerCase();
     const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
     return fullName.includes(q) || s.urn.toLowerCase().includes(q);
   }
-
   const filteredDefaulters = report ? report.defaulters.filter(matchesSearch) : [];
   const filteredGoodStanding = report ? report.goodStanding.filter(matchesSearch) : [];
   const overallAvg =
     overallStats.length > 0
       ? Math.round((overallStats.reduce((sum, s) => sum + s.percentage, 0) / overallStats.length) * 10) / 10
       : null;
-
   if (batches.length === 0 && !loading) {
     return (
       <div className="text-center py-24">
@@ -474,7 +433,6 @@ function buildExcelWorkbook(matrixData) {
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -497,9 +455,7 @@ function buildExcelWorkbook(matrixData) {
           />
         </div>
       </div>
-
       {error && <p className="text-brick font-medium">{error}</p>}
-
       {loading ? (
         <p className="text-ink/50 font-mono text-sm">Loading…</p>
       ) : report ? (
@@ -517,7 +473,6 @@ function buildExcelWorkbook(matrixData) {
               </button>
             </div>
           )}
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-card border border-rule rounded-lg p-5">
               <p className="text-xs font-mono uppercase tracking-wide text-ink/50 mb-1">Overall Attendance</p>
@@ -534,7 +489,6 @@ function buildExcelWorkbook(matrixData) {
               <p className="font-display text-4xl font-600 text-brick">{absentToday.length}</p>
             </div>
           </div>
-
           {attendanceMarkedToday && (
             <div className="bg-card border border-rule rounded-lg p-5">
               <p className="text-xs font-mono uppercase tracking-wide text-ink/50 mb-3">Absent Students Today</p>
@@ -552,7 +506,6 @@ function buildExcelWorkbook(matrixData) {
               )}
             </div>
           )}
-
           <div className="bg-card border border-rule rounded-lg p-5 space-y-3">
             <p className="text-xs font-mono uppercase tracking-wide text-ink/50">Download Custom Date Range</p>
             <div className="bg-card border border-rule rounded-lg p-4">
@@ -589,7 +542,6 @@ function buildExcelWorkbook(matrixData) {
             </div>
             {rangeError && <p className="text-sm text-brick font-medium">{rangeError}</p>}
           </div>
-
           <CollapsibleSection
             title="Defaulters (below 75%)"
             colorClass="text-brick"
@@ -616,7 +568,6 @@ function buildExcelWorkbook(matrixData) {
               </div>
             )}
           </CollapsibleSection>
-
           <CollapsibleSection
             title="Good Standing (75% and above)"
             colorClass="text-forest"

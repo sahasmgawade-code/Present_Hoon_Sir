@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 :root {
   --color-paper: 239 238 230;
   --color-ink: 30 42 38;
@@ -13,7 +12,6 @@
   --color-brick-dark: 126 50 34;
   --color-amber: 184 132 46;
 }
-
 html.dark {
   --color-paper: 24 29 27;
   --color-ink: 230 232 224;
@@ -25,18 +23,15 @@ html.dark {
   --color-brick-dark: 214 108 82;
   --color-amber: 220 172 96;
 }
-
 html {
   min-height: 100%;
   background: linear-gradient(135deg, #8FD3E8 0%, #4A9CB8 40%, #1F5C73 100%);
   background-size: cover;
   background-attachment: fixed;
 }
-
 html.dark {
   background: linear-gradient(135deg, #16232b 0%, #10222b 45%, #050c10 100%);
 }
-
 body {
   @apply text-ink font-sans antialiased;
   min-height: 100vh;
@@ -45,7 +40,6 @@ body {
   overflow-x: hidden;
   transition: color 0.2s ease;
 }
-
 body::before,
 body::after {
   content: '';
@@ -75,19 +69,16 @@ html.dark body::before {
 html.dark body::after {
   background: rgba(255, 255, 255, 0.035);
 }
-
 #root {
   position: relative;
   z-index: 1;
 }
-
 h1, h2, h3 {
   text-shadow: 0 1px 4px rgba(255, 255, 255, 0.35);
 }
 html.dark h1, html.dark h2, html.dark h3 {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
 }
-
 .bg-card,
 .bg-paper {
   backdrop-filter: blur(8px) saturate(180%);
@@ -98,7 +89,6 @@ html.dark .bg-card,
 html.dark .bg-paper {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0, 0, 0, 0.45);
 }
-
 select.bg-card,
 input.bg-paper {
   box-shadow: inset 0 1px 3px rgba(16, 45, 60, 0.08);
@@ -107,7 +97,6 @@ html.dark select.bg-card,
 html.dark input.bg-paper {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
 }
-
 .glass-btn {
   backdrop-filter: blur(6px) saturate(160%);
   -webkit-backdrop-filter: blur(6px) saturate(160%);
@@ -124,8 +113,6 @@ html.dark .glass-btn {
 html.dark .glass-btn:hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 16px rgba(0, 0, 0, 0.5);
 }
-
-/* the "perforated tear-off" signature — used on the danger zone and the QR ticket */
 .perforated {
   border-top: 2px dashed rgb(var(--color-rule));
   position: relative;
@@ -141,7 +128,6 @@ html.dark .glass-btn:hover {
   background-size: 20px 14px;
   background-repeat: repeat-x;
 }
-
 :focus-visible {
   outline: 2px solid rgb(var(--color-forest));
   outline-offset: 2px;

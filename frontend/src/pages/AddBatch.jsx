@@ -3,18 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
-
 function splitName(full) {
   const parts = String(full || '').trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return { firstName: '', lastName: '' };
-  // Single-word name (e.g. "Madonna"): don't duplicate it into lastName —
-  // that would silently show up as "Madonna Madonna" everywhere. Use a
-  // clear placeholder instead so it's obviously not a real surname.
   if (parts.length === 1) return { firstName: parts[0], lastName: '—' };
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
-
-// case-insensitive, whitespace-tolerant header lookup
 function pick(row, ...keys) {
   const normalized = {};
   for (const k of Object.keys(row)) normalized[k.trim().toLowerCase()] = row[k];
@@ -24,7 +18,6 @@ function pick(row, ...keys) {
   }
   return '';
 }
-
 function parseRows(rawRows) {
   return rawRows.map((row, idx) => {
     const urn = pick(row, 'urn').replace(/\s+/g, '').toUpperCase();
@@ -37,7 +30,6 @@ function parseRows(rawRows) {
     return { rowNum: idx + 2, urn, firstName, lastName, phone, email, parentPhone, valid };
   });
 }
-
 export default function AddBatch() {
   const navigate = useNavigate();
   const { isSuperAdmin } = useAuth();
@@ -45,35 +37,29 @@ export default function AddBatch() {
   const [collaborators, setCollaborators] = useState([]);
   const [selectedCollaboratorIds, setSelectedCollaboratorIds] = useState([]);
   const [collaboratorsError, setCollaboratorsError] = useState('');
-
   const [fileName, setFileName] = useState('');
   const [parsedRows, setParsedRows] = useState([]);
   const [parseError, setParseError] = useState('');
-
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [results, setResults] = useState(null);
-
   useEffect(() => {
     if (!isSuperAdmin) return; // only super admins can set up collaborators
     api.listAdminsBasic()
       .then((data) => setCollaborators(data.admins))
       .catch((err) => setCollaboratorsError(err.message));
   }, [isSuperAdmin]);
-
   function toggleCollaborator(id) {
     setSelectedCollaboratorIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
-
   function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     setParseError('');
     setFileName(file.name);
     setResults(null);
-
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
@@ -94,10 +80,8 @@ export default function AddBatch() {
     };
     reader.readAsArrayBuffer(file);
   }
-
   const validRows = parsedRows.filter((r) => r.valid);
   const invalidRows = parsedRows.filter((r) => !r.valid);
-
   async function handleCreate() {
     setCreateError('');
     if (!name.trim()) {
@@ -108,7 +92,6 @@ export default function AddBatch() {
     try {
       const batchData = await api.createBatch(name.trim(), selectedCollaboratorIds);
       const batchId = batchData.batch.id;
-
       const outcomes = await Promise.allSettled(
         validRows.map((r) =>
           api.createStudent(batchId, {
@@ -122,7 +105,6 @@ export default function AddBatch() {
           })
         )
       );
-
       const failed = [];
       const multiBatch = [];
       let created = 0;
@@ -136,7 +118,6 @@ export default function AddBatch() {
           failed.push({ row: validRows[i], reason: outcome.reason?.message || 'Failed' });
         }
       });
-
       setResults({ batchId, created, failed, multiBatch });
     } catch (err) {
       setCreateError(err.message || 'Could not create batch.');
@@ -144,7 +125,6 @@ export default function AddBatch() {
       setCreating(false);
     }
   }
-
   if (results) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
@@ -188,11 +168,9 @@ export default function AddBatch() {
       </div>
     );
   }
-
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <h1 className="font-display text-3xl font-600">Add Batch</h1>
-
       <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <div>
           <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
@@ -207,7 +185,6 @@ export default function AddBatch() {
             className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
           />
         </div>
-
         {isSuperAdmin && (
           <div>
             <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
@@ -241,7 +218,6 @@ export default function AddBatch() {
           </div>
         )}
       </div>
-
       <div className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <div>
           <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
@@ -254,7 +230,6 @@ export default function AddBatch() {
           {fileName && <p className="text-xs text-ink/50 mt-1 font-mono">{fileName}</p>}
           {parseError && <p className="text-sm text-brick font-medium mt-2">{parseError}</p>}
         </div>
-
         {parsedRows.length > 0 && (
           <div>
             <p className="text-sm font-mono text-ink/60 mb-2">
@@ -292,9 +267,7 @@ export default function AddBatch() {
           </div>
         )}
       </div>
-
       {createError && <p className="text-brick font-medium">{createError}</p>}
-
       <div className="flex gap-3">
         <button
           onClick={handleCreate}

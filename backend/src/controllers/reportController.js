@@ -1,5 +1,4 @@
 const pool = require('../config/db');
-
 async function canAccessBatch(admin, batchId) {
   if (admin.role === 'super_admin') return true;
   const result = await pool.query(
@@ -8,8 +7,6 @@ async function canAccessBatch(admin, batchId) {
   );
   return result.rows.length > 0;
 }
-
-// Helper: are two admins "collaborators" — do they share access to at least one batch?
 async function isCollaboratorWith(adminId, otherAdminId) {
   if (adminId === otherAdminId) return true;
   const result = await pool.query(
@@ -21,30 +18,21 @@ async function isCollaboratorWith(adminId, otherAdminId) {
   );
   return result.rows.length > 0;
 }
-
-// Helper: can req.admin access this specific student row (batch-assigned or not)?
 async function canAccessStudent(admin, student) {
   if (admin.role === 'super_admin') return true;
   if (student.batch_id) {
     return canAccessBatch(admin, student.batch_id);
   }
-  // Unassigned student: only visible to its creator, or the creator's collaborators
   if (!student.created_by) return false;
   return isCollaboratorWith(admin.id, student.created_by);
 }
-
-// Batch report: per-student stats + defaulter split (< 75%) vs good standing (>= 75%)
-// Optional ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD restricts the calculation to that
-// window. Omit both for the all-time report.
 async function getBatchReport(req, res) {
   const { batchId } = req.params;
   const { startDate, endDate } = req.query;
-
   try {
     if (!(await canAccessBatch(req.admin, batchId))) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
-
     const params = [batchId];
     let dateFilter = '';
     if (startDate) {
@@ -55,25 +43,22 @@ async function getBatchReport(req, res) {
       params.push(endDate);
       dateFilter += ` AND date <= $${params.length}`;
     }
-
     const workingDaysRes = await pool.query(
       `SELECT COUNT(DISTINCT date) AS total FROM attendance WHERE batch_id = $1${dateFilter}`,
       params
     );
     const totalWorkingDays = parseInt(workingDaysRes.rows[0].total, 10) || 0;
-
     const studentsRes = await pool.query(
       `SELECT s.id, s.urn, s.first_name, s.last_name,
-              COUNT(a.id) FILTER (WHERE a.status = 'present') AS present_count
+      COUNT(a.id) FILTER (WHERE a.status = 'present') AS present_count
        FROM students s
        LEFT JOIN attendance a
-         ON a.student_id = s.id AND a.batch_id = $1${dateFilter}
+        ON a.student_id = s.id AND a.batch_id = $1${dateFilter}
        WHERE s.batch_id = $1
        GROUP BY s.id
        ORDER BY s.first_name`,
       params
     );
-
     const allStudents = studentsRes.rows.map(s => {
       const presentCount = parseInt(s.present_count, 10) || 0;
       const percentage = totalWorkingDays > 0
@@ -89,10 +74,8 @@ async function getBatchReport(req, res) {
         percentage,
       };
     });
-
     const defaulters = allStudents.filter(s => s.percentage < 75);
     const goodStanding = allStudents.filter(s => s.percentage >= 75);
-
     res.json({
       batchId: parseInt(batchId, 10),
       totalWorkingDays,
@@ -106,27 +89,20 @@ async function getBatchReport(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
-// Individual student report: full attendance history + summary
 async function getStudentReport(req, res) {
   const { studentId } = req.params;
-
   try {
     const studentRes = await pool.query('SELECT * FROM students WHERE id = $1', [studentId]);
     if (studentRes.rows.length === 0) return res.status(404).json({ error: 'Student not found' });
-
     const student = studentRes.rows[0];
-
     if (!(await canAccessStudent(req.admin, student))) {
       return res.status(403).json({ error: 'No access to this student' });
     }
-
     const workingDaysRes = await pool.query(
       'SELECT COUNT(DISTINCT date) AS total FROM attendance WHERE batch_id = $1',
       [student.batch_id]
     );
     const totalWorkingDays = parseInt(workingDaysRes.rows[0].total, 10) || 0;
-
     const historyRes = await pool.query(
       `SELECT date, status, method, marked_at
        FROM attendance
@@ -134,12 +110,10 @@ async function getStudentReport(req, res) {
        ORDER BY date DESC`,
       [studentId, student.batch_id]
     );
-
     const presentCount = historyRes.rows.filter(r => r.status === 'present').length;
     const percentage = totalWorkingDays > 0
       ? Math.round((presentCount / totalWorkingDays) * 10000) / 100
       : 0;
-
     res.json({
       student: {
         id: student.id,
@@ -161,18 +135,13 @@ async function getStudentReport(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
-// Batch attendance matrix: URN, Name, per-date present/absent, and overall %.
-// Used for the Excel export. Optional ?startDate=&endDate= restricts the range.
 async function getBatchAttendanceMatrix(req, res) {
   const { batchId } = req.params;
   const { startDate, endDate } = req.query;
-
   try {
     if (!(await canAccessBatch(req.admin, batchId))) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
-
     const params = [batchId];
     let dateFilterPlain = '';
     let dateFilterA = '';
@@ -186,15 +155,11 @@ async function getBatchAttendanceMatrix(req, res) {
       dateFilterPlain += ` AND date <= $${params.length}`;
       dateFilterA += ` AND a.date <= $${params.length}`;
     }
-
-    // All distinct attendance dates in range, in order -> these become the columns
     const datesRes = await pool.query(
       `SELECT DISTINCT date FROM attendance WHERE batch_id = $1${dateFilterPlain} ORDER BY date`,
       params
     );
     const dates = datesRes.rows.map((r) => r.date);
-
-    // Every student in the batch, left-joined with their attendance rows
     const rowsRes = await pool.query(
       `SELECT s.id AS student_id, s.urn, s.first_name, s.last_name, a.date, a.status
        FROM students s
@@ -204,7 +169,6 @@ async function getBatchAttendanceMatrix(req, res) {
        ORDER BY s.first_name, a.date`,
       params
     );
-
     const studentMap = new Map();
     for (const row of rowsRes.rows) {
       if (!studentMap.has(row.student_id)) {
@@ -223,7 +187,6 @@ async function getBatchAttendanceMatrix(req, res) {
         if (row.status === 'present') entry.presentCount += 1;
       }
     }
-
     const totalWorkingDays = dates.length;
     const students = Array.from(studentMap.values()).map((s) => ({
       ...s,
@@ -233,7 +196,6 @@ async function getBatchAttendanceMatrix(req, res) {
           ? Math.round((s.presentCount / totalWorkingDays) * 10000) / 100
           : 0,
     }));
-
     res.json({
       batchId: parseInt(batchId, 10),
       dates,
@@ -246,5 +208,4 @@ async function getBatchAttendanceMatrix(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-
 module.exports = { getBatchReport, getStudentReport, getBatchAttendanceMatrix };

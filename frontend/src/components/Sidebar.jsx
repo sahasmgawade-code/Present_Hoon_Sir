@@ -4,8 +4,6 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { LogoMark } from './Logo.jsx';
-
-// --- Icons (inline SVG, 20x20, stroke-based) ---
 const icons = {
   dashboard: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -93,12 +91,8 @@ const icons = {
     </svg>
   ),
 };
-
-// Tooltip rendered into document.body via portal, so it can never
-// affect the sidebar's own scroll/overflow behaviour.
 function PortalTooltip({ label, anchorRef, visible }) {
   const [pos, setPos] = useState(null);
-
   useEffect(() => {
     if (visible && anchorRef.current) {
       const rect = anchorRef.current.getBoundingClientRect();
@@ -107,9 +101,7 @@ function PortalTooltip({ label, anchorRef, visible }) {
       setPos(null);
     }
   }, [visible, anchorRef]);
-
   if (!visible || !pos) return null;
-
   return createPortal(
     <span
       style={{ position: 'fixed', top: pos.top, left: pos.left, transform: 'translateY(-50%)' }}
@@ -120,11 +112,9 @@ function PortalTooltip({ label, anchorRef, visible }) {
     document.body
   );
 }
-
 function NavItem({ to, end, icon, label, collapsed, onClick }) {
   const ref = useRef(null);
   const [hovered, setHovered] = useState(false);
-
   return (
     <div
       className="relative"
@@ -149,7 +139,6 @@ function NavItem({ to, end, icon, label, collapsed, onClick }) {
     </div>
   );
 }
-
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const { admin, logout, isSuperAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -158,19 +147,15 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
   const settingsRef = useRef(null);
   const [logoutHovered, setLogoutHovered] = useState(false);
   const [settingsHovered, setSettingsHovered] = useState(false);
-
   function go(path) {
     setMobileOpen(false);
     navigate(path);
   }
-
   function handleLogout() {
     setMobileOpen(false);
     logout();
   }
-
   const themeLabel = theme === 'dark' ? 'Light mode' : 'Dark mode';
-
   return (
     <>
       {/* Mobile overlay backdrop */}
@@ -180,7 +165,6 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           onClick={() => setMobileOpen(false)}
         />
       )}
-
       <aside
         className={`fixed md:sticky top-0 left-0 h-screen z-40 bg-card border-r border-rule flex flex-col overflow-x-hidden
           transition-all duration-200 ease-in-out
@@ -206,7 +190,6 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
             {collapsed ? null : icons.chevronLeft}
           </button>
         </div>
-
         {/* Collapsed-state expand handle */}
         {collapsed && (
           <button
@@ -217,7 +200,6 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
             {icons.chevronRight}
           </button>
         )}
-
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2 space-y-1">
           <NavItem to="/dashboard" end icon={icons.dashboard} label="Dashboard" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
@@ -230,7 +212,6 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
             <NavItem to="/admins" icon={icons.admin} label="Manage Admin" collapsed={collapsed} onClick={() => setMobileOpen(false)} />
           )}
         </nav>
-
         {/* Bottom: admin name + settings + logout */}
         <div className="border-t border-rule py-3 px-2 space-y-1">
           {!collapsed && (
@@ -272,7 +253,6 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           </div>
         </div>
       </aside>
-
       {/* Mobile top bar with hamburger (only visible on small screens) */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-rule flex items-center px-4 z-20">
         <button onClick={() => setMobileOpen(true)} className="text-ink/80" aria-label="Open menu">

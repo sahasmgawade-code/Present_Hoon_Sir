@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { api, getDeviceToken } from '../api/client.js';
-
 function useCountdown(expiresAt) {
   const [secondsLeft, setSecondsLeft] = useState(null);
-
   useEffect(() => {
     if (!expiresAt) return;
     const tick = () => {
@@ -15,20 +13,16 @@ function useCountdown(expiresAt) {
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [expiresAt]);
-
   return secondsLeft;
 }
-
 function formatCountdown(seconds) {
   if (seconds === null) return '';
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
-
 export default function ScanAttendance() {
   const { token } = useParams();
-
   const [status, setStatus] = useState('loading'); // loading | open | expired | error
   const [expiresAt, setExpiresAt] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -39,9 +33,7 @@ export default function ScanAttendance() {
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [confirmedName, setConfirmedName] = useState('');
-
   const secondsLeft = useCountdown(status === 'open' ? expiresAt : null);
-
   const checkStatus = useCallback(async () => {
     try {
       const data = await api.getQrSessionStatus(token);
@@ -52,18 +44,14 @@ export default function ScanAttendance() {
       setStatus('error');
     }
   }, [token]);
-
   useEffect(() => {
     checkStatus();
   }, [checkStatus]);
-
-  // once the countdown hits zero client-side, flip to expired without waiting on a re-fetch
   useEffect(() => {
     if (secondsLeft === 0 && status === 'open') {
       setStatus('expired');
     }
   }, [secondsLeft, status]);
-
   async function handleSubmit(e) {
     e.preventDefault();
     setSubmitError('');
@@ -89,7 +77,6 @@ export default function ScanAttendance() {
       setSubmitting(false);
     }
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper px-6">
       <div className="w-full max-w-sm">
@@ -100,19 +87,16 @@ export default function ScanAttendance() {
           </div>
           <p className="text-sm text-ink/50 font-mono">mark yourself present</p>
         </div>
-
         <div className="bg-card border border-rule rounded-lg p-8">
           {status === 'loading' && (
             <p className="text-sm text-ink/50 font-mono text-center">Checking this code…</p>
           )}
-
           {status === 'error' && (
             <div className="text-center space-y-2">
               <p className="font-display text-xl text-brick">Invalid code</p>
               <p className="text-sm text-ink/60">{errorMessage}</p>
             </div>
           )}
-
           {status === 'expired' && !submitted && (
             <div className="text-center space-y-2">
               <p className="font-display text-xl text-brick">This code has expired</p>
@@ -121,7 +105,6 @@ export default function ScanAttendance() {
               </p>
             </div>
           )}
-
           {status === 'open' && !submitted && (
             <>
               <div className="flex items-center justify-between mb-5">
@@ -132,7 +115,6 @@ export default function ScanAttendance() {
                   {formatCountdown(secondsLeft)}
                 </span>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
@@ -171,13 +153,11 @@ export default function ScanAttendance() {
                     className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
                   />
                 </div>
-
                 {submitError && (
                   <p className="text-sm text-brick font-medium" role="alert">
                     {submitError}
                   </p>
                 )}
-
                 <button
                   type="submit"
                   disabled={submitting}
@@ -188,7 +168,6 @@ export default function ScanAttendance() {
               </form>
             </>
           )}
-
           {submitted && (
             <div className="text-center space-y-2 perforated pt-6">
               <p className="font-display text-xl text-forestDark">You're marked present</p>

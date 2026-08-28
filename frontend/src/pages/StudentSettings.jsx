@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
-
 const fields = [
   ['urn', 'URN', true],
   ['firstName', 'First Name', true],
@@ -10,20 +9,16 @@ const fields = [
   ['email', 'Email', false],
   ['parentPhone', "Parent's Phone", false],
 ];
-
 export default function StudentSettings() {
   const { id } = useParams();
   const studentId = Number(id);
   const navigate = useNavigate();
-
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   const [form, setForm] = useState(null);
   const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
-
   const [togglingBlacklist, setTogglingBlacklist] = useState(false);
   const [busy, setBusy] = useState(false);
   const [credLoginId, setCredLoginId] = useState('');
@@ -31,7 +26,6 @@ export default function StudentSettings() {
   const [credError, setCredError] = useState('');
   const [credSuccess, setCredSuccess] = useState('');
   const [savingCred, setSavingCred] = useState(false);
-
   useEffect(() => {
     setLoading(true);
     setError('');
@@ -52,11 +46,9 @@ export default function StudentSettings() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [studentId]);
-
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
-
   async function handleSaveEdit(e) {
     e.preventDefault();
     setEditError('');
@@ -78,7 +70,6 @@ export default function StudentSettings() {
       setSavingEdit(false);
     }
   }
-
   async function toggleBlacklist() {
     if (!student) return;
     setTogglingBlacklist(true);
@@ -91,7 +82,6 @@ export default function StudentSettings() {
       setTogglingBlacklist(false);
     }
   }
-
   async function handleSaveCredentials(e) {
     e.preventDefault();
     setCredError('');
@@ -116,7 +106,6 @@ export default function StudentSettings() {
       setSavingCred(false);
     }
   }
-
   async function handleDelete() {
     if (!student) return;
     if (!window.confirm(`Remove ${student.first_name} ${student.last_name} from this batch? This cannot be undone.`)) return;
@@ -129,11 +118,9 @@ export default function StudentSettings() {
       setBusy(false);
     }
   }
-
   if (loading) {
     return <p className="text-ink/50 font-mono text-sm">Loading…</p>;
   }
-
   if (error || !student || !form) {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
@@ -144,7 +131,6 @@ export default function StudentSettings() {
       </div>
     );
   }
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -163,7 +149,6 @@ export default function StudentSettings() {
         </div>
         <p className="text-sm text-ink/50 mt-1 font-mono">{student.urn}</p>
       </div>
-
       {/* Edit Student */}
       <form onSubmit={handleSaveEdit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <h2 className="font-display text-xl">Details</h2>
@@ -186,9 +171,7 @@ export default function StudentSettings() {
             </div>
           ))}
         </div>
-
         {editError && <p className="text-sm text-brick font-medium">{editError}</p>}
-
         <button
           type="submit"
           disabled={savingEdit}
@@ -197,7 +180,6 @@ export default function StudentSettings() {
           {savingEdit ? 'Saving…' : 'Save Changes'}
         </button>
       </form>
-
       {/* Student Portal Login */}
       <form onSubmit={handleSaveCredentials} className="bg-card border border-rule rounded-lg p-6 space-y-4">
         <div>
@@ -231,10 +213,8 @@ export default function StudentSettings() {
             />
           </div>
         </div>
-
         {credError && <p className="text-sm text-brick font-medium">{credError}</p>}
         {credSuccess && <p className="text-sm text-forestDark font-medium">{credSuccess}</p>}
-
         <button
           type="submit"
           disabled={savingCred}
@@ -243,8 +223,6 @@ export default function StudentSettings() {
           {savingCred ? 'Saving…' : student.login_id ? 'Update Credentials' : 'Set Credentials'}
         </button>
       </form>
-
-
       {/* Blacklist */}
       <div className="bg-card border border-rule rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -276,7 +254,6 @@ export default function StudentSettings() {
           />
         </button>
       </div>
-
       {/* Delete */}
       <div className="bg-card border border-brick/40 rounded-lg p-6 flex items-center justify-between gap-4 flex-wrap perforated">
         <div>

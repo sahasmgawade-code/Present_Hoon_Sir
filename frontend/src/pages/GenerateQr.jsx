@@ -3,7 +3,6 @@ import { api } from '../api/client.js';
 import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
 function useCountdown(expiresAt) {
   const [secondsLeft, setSecondsLeft] = useState(null);
-
   useEffect(() => {
     if (!expiresAt) return;
     const tick = () => {
@@ -14,17 +13,14 @@ function useCountdown(expiresAt) {
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [expiresAt]);
-
   return secondsLeft;
 }
-
 function formatCountdown(seconds) {
   if (seconds === null) return '';
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
-
 export default function GenerateQr() {
   const [batches, setBatches] = useState([]);
   const [batchId, setBatchId] = useSelectedBatch();
@@ -34,17 +30,14 @@ export default function GenerateQr() {
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
   const [downloaded, setDownloaded] = useState(false);
-
   const [validityMinutes, setValidityMinutes] = useState('');
   const [savingValidity, setSavingValidity] = useState(false);
   const [validityError, setValidityError] = useState('');
   const [validitySaved, setValiditySaved] = useState(false);
-
   const secondsLeft = useCountdown(session?.expiresAt);
   const expired = session && secondsLeft === 0;
   const pollRef = useRef(null);
   const downloadedRef = useRef(false);
-
   useEffect(() => {
     api.listBatches()
       .then((data) => {
@@ -55,17 +48,14 @@ export default function GenerateQr() {
         }
       })
       .catch((err) => setBatchesError(err.message));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const pollSubmissions = useCallback(async (sessionId) => {
     try {
       const data = await api.getQrSessionReport(sessionId);
       setSubmissions(data.submissions);
     } catch {
-      // transient poll failures aren't worth surfacing — next tick will retry
     }
   }, []);
-
   async function handleGenerate() {
     if (!batchId) return;
     setGenerateError('');
@@ -87,8 +77,6 @@ export default function GenerateQr() {
       setGenerating(false);
     }
   }
-
-  // poll live responses while the session is active
   useEffect(() => {
     if (!session || expired) {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -98,8 +86,6 @@ export default function GenerateQr() {
     pollRef.current = setInterval(() => pollSubmissions(session.id), 3000);
     return () => clearInterval(pollRef.current);
   }, [session, expired, pollSubmissions]);
-
-  // auto-download the response sheet the moment the timer hits zero, once
   useEffect(() => {
     if (expired && session && !downloadedRef.current) {
       downloadedRef.current = true;
@@ -110,10 +96,7 @@ export default function GenerateQr() {
       });
     }
   }, [expired, session, pollSubmissions]);
-
   const selectedBatch = batches.find((b) => b.id === batchId);
-
-  // keep the editable field in sync whenever the selected batch changes
   useEffect(() => {
     if (selectedBatch) {
       setValidityMinutes(String(selectedBatch.qr_validity_minutes ?? 5));
@@ -121,7 +104,6 @@ export default function GenerateQr() {
       setValiditySaved(false);
     }
   }, [selectedBatch?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
   async function handleSaveValidity() {
     const minutes = Number(validityMinutes);
     if (!Number.isInteger(minutes) || minutes < 1 || minutes > 180) {
@@ -141,7 +123,6 @@ export default function GenerateQr() {
       setSavingValidity(false);
     }
   }
-
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -163,9 +144,7 @@ export default function GenerateQr() {
           </span>
         )}
       </div>
-
       {batchesError && <p className="text-brick font-medium">{batchesError}</p>}
-
       {!session && !batchesError && selectedBatch && (
         <div className="bg-card border border-rule rounded-lg p-4 flex items-center gap-3">
           <label className="text-xs font-mono uppercase tracking-wide text-ink/60">
@@ -190,7 +169,6 @@ export default function GenerateQr() {
           {validityError && <span className="text-brick text-sm">{validityError}</span>}
         </div>
       )}
-
       {!session && !batchesError && (
         <div className="bg-card border border-rule rounded-lg p-10 text-center space-y-4">
           <p className="text-sm text-ink/60">
@@ -206,7 +184,6 @@ export default function GenerateQr() {
           </button>
         </div>
       )}
-
       {session && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-card border border-rule rounded-lg p-8 text-center">
@@ -241,7 +218,6 @@ export default function GenerateQr() {
               </div>
             )}
           </div>
-
           <div className="bg-card border border-rule rounded-lg p-6">
             <p className="text-xs font-mono uppercase tracking-wide text-ink/50 mb-3">
               Live Responses ({submissions.length})

@@ -19,7 +19,6 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000', // keep local dev working
 ].filter(Boolean);
-
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -30,11 +29,9 @@ app.use(cors({
   },
 }));
 app.use(express.json());
-
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
-
 app.use('/api/auth', authRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/batches', batchRoutes);

@@ -3,22 +3,18 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import Logo from '../components/Logo.jsx';
 import Footer from '../components/Footer.jsx';
-
 export default function SetPassword() {
   const { token } = useParams();
   const navigate = useNavigate();
-
   const [checking, setChecking] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
   const [adminInfo, setAdminInfo] = useState(null);
   const [tokenError, setTokenError] = useState('');
-
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-
   useEffect(() => {
     api.verifyResetToken(token)
       .then((data) => {
@@ -28,11 +24,9 @@ export default function SetPassword() {
       .catch((err) => setTokenError(err.message || 'This link is invalid or has expired.'))
       .finally(() => setChecking(false));
   }, [token]);
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
-
     if (password.length < 8) {
       setError('Password must be at least 8 characters.');
       return;
@@ -41,7 +35,6 @@ export default function SetPassword() {
       setError('Passwords do not match.');
       return;
     }
-
     setSubmitting(true);
     try {
       await api.setPassword(token, password);
@@ -53,7 +46,6 @@ export default function SetPassword() {
       setSubmitting(false);
     }
   }
-
   return (
     <div className="min-h-screen bg-transparent">
       <div className="flex items-center justify-center px-6 py-16">
@@ -63,7 +55,6 @@ export default function SetPassword() {
               <Logo iconSize={56} textSize="text-3xl" />
             </div>
           </div>
-
           <div className="bg-card border border-rule rounded-lg p-8 space-y-5">
             {checking ? (
               <p className="text-sm text-ink/60 text-center">Checking link…</p>
@@ -110,13 +101,11 @@ export default function SetPassword() {
                     className="w-full border border-rule rounded px-3 py-2 bg-paper focus-visible:outline-forest"
                   />
                 </div>
-
                 {error && (
                   <p className="text-sm text-brick font-medium" role="alert">
                     {error}
                   </p>
                 )}
-
                 <button
                   type="submit"
                   disabled={submitting}

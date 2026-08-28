@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { useFacultyAuth } from '../context/FacultyAuthContext.jsx';
-
 const STATUS_LABEL = { pending: 'Pending', completed: 'Completed', incomplete: 'Incomplete' };
 const STATUS_STYLE = {
   pending: 'bg-ink/10 text-ink/60',
   completed: 'bg-forestGlass/20 text-forestDark',
   incomplete: 'bg-brickGlass/20 text-brick',
 };
-
 function AssignmentForm({ batchId, onCreated, onCancel }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -16,7 +14,6 @@ function AssignmentForm({ batchId, onCreated, onCancel }) {
   const [file, setFile] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -37,7 +34,6 @@ function AssignmentForm({ batchId, onCreated, onCancel }) {
       setBusy(false);
     }
   }
-
   return (
     <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
       <div>
@@ -98,14 +94,12 @@ function AssignmentForm({ batchId, onCreated, onCancel }) {
     </form>
   );
 }
-
 function SubmissionsPanel({ assignmentId, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [remarks, setRemarks] = useState({});
-
   function load() {
     setLoading(true);
     api.listSubmissions(assignmentId)
@@ -118,9 +112,7 @@ function SubmissionsPanel({ assignmentId, onClose }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
-
   useEffect(load, [assignmentId]);
-
   async function grade(submissionId, status) {
     setSavingId(submissionId);
     try {
@@ -132,7 +124,6 @@ function SubmissionsPanel({ assignmentId, onClose }) {
       setSavingId(null);
     }
   }
-
   return (
     <div className="bg-paper border border-rule rounded-lg p-4 mt-2 space-y-3">
       <div className="flex items-center justify-between">
@@ -193,14 +184,12 @@ function SubmissionsPanel({ assignmentId, onClose }) {
     </div>
   );
 }
-
 function AssignmentsTab({ batchId }) {
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [openSubmissionsId, setOpenSubmissionsId] = useState(null);
-
   function load() {
     setLoading(true);
     api.listBatchAssignments(batchId)
@@ -208,9 +197,7 @@ function AssignmentsTab({ batchId }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
-
   useEffect(load, [batchId]);
-
   async function handleDelete(id) {
     if (!window.confirm('Delete this assignment? This also deletes all student submissions.')) return;
     try {
@@ -220,7 +207,6 @@ function AssignmentsTab({ batchId }) {
       alert(err.message || 'Could not delete assignment.');
     }
   }
-
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -281,12 +267,10 @@ function AssignmentsTab({ batchId }) {
     </div>
   );
 }
-
 function StudentsTab({ batchId }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   useEffect(() => {
     setLoading(true);
     api.getFacultyBatchStudents(batchId)
@@ -294,7 +278,6 @@ function StudentsTab({ batchId }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [batchId]);
-
   if (loading) return <p className="text-ink/50 font-mono text-sm">Loading…</p>;
   if (error) return <p className="text-sm text-brick font-medium">{error}</p>;
   if (students.length === 0) {
@@ -304,7 +287,6 @@ function StudentsTab({ batchId }) {
       </div>
     );
   }
-
   return (
     <div className="bg-card border border-rule rounded-lg divide-y divide-rule overflow-hidden">
       {students.map((s) => (
@@ -323,7 +305,6 @@ function StudentsTab({ batchId }) {
     </div>
   );
 }
-
 export default function FacultyPortal() {
   const { faculty, logout } = useFacultyAuth();
   const [batches, setBatches] = useState([]);
@@ -331,7 +312,6 @@ export default function FacultyPortal() {
   const [error, setError] = useState('');
   const [selectedBatchId, setSelectedBatchId] = useState(null);
   const [tab, setTab] = useState('students');
-
   useEffect(() => {
     api.getMyFacultyBatches()
       .then((d) => {
@@ -341,11 +321,9 @@ export default function FacultyPortal() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
-
   if (loading) {
     return <p className="text-ink/50 font-mono text-sm text-center mt-16">Loading…</p>;
   }
-
   return (
     <div className="max-w-3xl mx-auto mt-10 space-y-6 px-4 pb-16">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -360,9 +338,7 @@ export default function FacultyPortal() {
           Log Out
         </button>
       </div>
-
       {error && <p className="text-sm text-brick font-medium">{error}</p>}
-
       {batches.length === 0 ? (
         <div className="bg-card border border-rule rounded-lg p-10 text-center">
           <p className="text-sm text-ink/50">You haven't been assigned to any batches yet.</p>
@@ -384,7 +360,6 @@ export default function FacultyPortal() {
               </button>
             ))}
           </div>
-
           <div className="flex gap-2 border-b border-rule">
             {['students', 'assignments'].map((t) => (
               <button
@@ -398,7 +373,6 @@ export default function FacultyPortal() {
               </button>
             ))}
           </div>
-
           {selectedBatchId && (tab === 'students'
             ? <StudentsTab key={selectedBatchId} batchId={selectedBatchId} />
             : <AssignmentsTab key={selectedBatchId} batchId={selectedBatchId} />)}

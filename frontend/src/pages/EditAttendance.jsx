@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { api } from '../api/client.js';
 import { useSelectedBatch } from '../hooks/useSelectedBatch.js';
 import { todayIST } from '../utils/date.js';
-
 function StatusToggle({ status, onChange }) {
   const isPresent = status === 'present';
   return (
@@ -54,7 +53,6 @@ export default function EditAttendance() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
-
   useEffect(() => {
     api.listBatches()
       .then((data) => {
@@ -67,7 +65,6 @@ export default function EditAttendance() {
       .catch((err) => setError(err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const loadAttendance = useCallback(async (bId, d) => {
     if (!bId || !d) return;
     setLoading(true);
@@ -83,21 +80,16 @@ export default function EditAttendance() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     if (batchId && date) loadAttendance(batchId, date);
   }, [batchId, date, loadAttendance]);
-
   function setStatus(studentId, status) {
     setRows((prev) => prev.map((r) => (r.student_id === studentId ? { ...r, status } : r)));
   }
-
   function markAll(status) {
     setRows((prev) => prev.map((r) => ({ ...r, status })));
   }
-
   const presentCount = useMemo(() => rows.filter((r) => r.status === 'present').length, [rows]);
-
   async function handleSave() {
     setSaving(true);
     setError('');
@@ -113,7 +105,6 @@ export default function EditAttendance() {
       setSaving(false);
     }
   }
-
   if (batches.length === 0) {
     return (
       <div className="text-center py-24">
@@ -122,7 +113,6 @@ export default function EditAttendance() {
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -146,7 +136,6 @@ export default function EditAttendance() {
           />
         </div>
       </div>
-
       {error && <p className="text-brick font-medium">{error}</p>}
       {!date ? (
         <div className="bg-card border border-rule rounded-lg p-10 text-center">
@@ -179,7 +168,6 @@ export default function EditAttendance() {
               </button>
             </div>
           </div>
-
           <div className="bg-card border border-rule rounded-lg divide-y divide-rule overflow-hidden">
             {rows.map((r) => (
               <div key={r.student_id} className="p-4 flex items-center justify-between flex-wrap gap-3">
@@ -201,7 +189,6 @@ export default function EditAttendance() {
               </div>
             ))}
           </div>
-
           <div className="flex items-center gap-3">
             <button
               onClick={handleSave}

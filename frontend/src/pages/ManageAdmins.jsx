@@ -10,7 +10,6 @@ function GearIcon({ className }) {
     </svg>
   );
 }
-
 export default function ManageAdmins() {
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,7 +19,6 @@ export default function ManageAdmins() {
   const [addError, setAddError] = useState('');
   const [creating, setCreating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
   function loadAdmins() {
     setLoading(true);
     setError('');
@@ -29,28 +27,22 @@ export default function ManageAdmins() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }
-
   useEffect(() => {
     loadAdmins();
   }, []);
-
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   }
-
   function toggleFormFlag(field) {
     setForm((f) => ({ ...f, [field]: !f[field] }));
   }
-
   async function handleCreate(e) {
     e.preventDefault();
     setAddError('');
-
     if (!form.name.trim() || !form.email.trim()) {
       setAddError('Name and email are required.');
       return;
     }
-
     setCreating(true);
     try {
       await api.createAdmin({
@@ -68,13 +60,11 @@ export default function ManageAdmins() {
       setCreating(false);
     }
   }
-
   const filteredAdmins = admins.filter((a) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toLowerCase();
     return a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q);
   });
-
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -90,7 +80,6 @@ export default function ManageAdmins() {
           {showAddForm ? 'Close' : '+ Create Admin'}
         </button>
       </div>
-
       <div className="bg-card border border-rule rounded-lg p-4">
         <input
           type="text"
@@ -100,7 +89,6 @@ export default function ManageAdmins() {
           className="w-full border border-rule rounded px-3 py-2 bg-paper font-medium focus:outline-none focus:ring-1 focus:ring-forest"
         />
       </div>
-
       {showAddForm && (
         <form onSubmit={handleCreate} className="bg-card border border-rule rounded-lg p-6 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -129,7 +117,6 @@ export default function ManageAdmins() {
               />
             </div>
           </div>
-
           <div className="flex flex-wrap gap-6 pt-1">
             <label className="flex items-center gap-3 text-sm cursor-pointer">
               <button
@@ -153,7 +140,6 @@ export default function ManageAdmins() {
               </button>
               <span className="text-ink/70">Email notifications</span>
             </label>
-
             <label className="flex items-center gap-3 text-sm cursor-pointer">
               <button
                 type="button"
@@ -177,9 +163,7 @@ export default function ManageAdmins() {
               <span className="text-ink/70">SMS notifications</span>
             </label>
           </div>
-
           {addError && <p className="text-sm text-brick font-medium">{addError}</p>}
-
           <div className="flex gap-3">
             <button
               type="submit"
@@ -198,9 +182,7 @@ export default function ManageAdmins() {
           </div>
         </form>
       )}
-
       {error && <p className="text-brick font-medium">{error}</p>}
-
       {loading ? (
         <p className="text-ink/50 font-mono text-sm">Loading…</p>
       ) : admins.length === 0 ? (

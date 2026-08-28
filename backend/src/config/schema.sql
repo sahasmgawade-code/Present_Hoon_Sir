@@ -1,4 +1,3 @@
--- Admins (both Super Admin and regular Admin live here, differentiated by role)
 CREATE TABLE admins (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -11,7 +10,6 @@ CREATE TABLE admins (
   password_reset_expires TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
--- Batches
 CREATE TABLE batches (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -20,18 +18,12 @@ CREATE TABLE batches (
   is_archived BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()
 );
-
--- Many-to-many: which admins manage which batches (supports collaboration)
 CREATE TABLE batch_admins (
   batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
   admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
   PRIMARY KEY (batch_id, admin_id)
 );
-
 CREATE EXTENSION IF NOT EXISTS citext;
-
--- Students
--- Students
 CREATE TABLE students (
   id SERIAL PRIMARY KEY,
   urn CITEXT NOT NULL,
@@ -48,8 +40,6 @@ CREATE TABLE students (
   login_id VARCHAR(50) UNIQUE,
   password_hash VARCHAR(255)
 );
-
--- QR sessions (one per "Generate QR" activation)
 CREATE TABLE qr_sessions (
   id SERIAL PRIMARY KEY,
   batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
@@ -57,8 +47,6 @@ CREATE TABLE qr_sessions (
   created_at TIMESTAMP DEFAULT NOW(),
   expires_at TIMESTAMP NOT NULL
 );
-
--- Attendance records
 CREATE TABLE attendance (
   id SERIAL PRIMARY KEY,
   student_id INTEGER REFERENCES students(id) ON DELETE CASCADE,
@@ -70,8 +58,6 @@ CREATE TABLE attendance (
   marked_at TIMESTAMP DEFAULT NOW(),
   UNIQUE (student_id, date)
 );
-
--- Device submissions log (for the 2-per-15-min cooldown rule)
 CREATE TABLE qr_submissions (
   id SERIAL PRIMARY KEY,
   qr_session_id INTEGER REFERENCES qr_sessions(id) ON DELETE CASCADE,
@@ -84,8 +70,6 @@ CREATE TABLE qr_submissions (
 CREATE INDEX idx_attendance_batch_date ON attendance(batch_id, date);
 CREATE INDEX idx_students_batch ON students(batch_id);
 CREATE INDEX idx_qr_submissions_device ON qr_submissions(device_token, submitted_at);
-
--- Faculties (created by admins, log in separately from admins/students)
 CREATE TABLE faculties (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -97,22 +81,16 @@ CREATE TABLE faculties (
   password_reset_expires TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
-
--- Which admins can see/manage a given faculty (creator + collaborators)
 CREATE TABLE faculty_admins (
   faculty_id INTEGER REFERENCES faculties(id) ON DELETE CASCADE,
   admin_id INTEGER REFERENCES admins(id) ON DELETE CASCADE,
   PRIMARY KEY (faculty_id, admin_id)
 );
-
--- Which batches a faculty is allowed to work with
 CREATE TABLE faculty_batches (
   faculty_id INTEGER REFERENCES faculties(id) ON DELETE CASCADE,
   batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
   PRIMARY KEY (faculty_id, batch_id)
 );
-
--- Assignments posted by faculty for a batch (PDF lives in Google Drive)
 CREATE TABLE assignments (
   id SERIAL PRIMARY KEY,
   batch_id INTEGER REFERENCES batches(id) ON DELETE CASCADE,
@@ -125,8 +103,6 @@ CREATE TABLE assignments (
   file_name VARCHAR(255),
   created_at TIMESTAMP DEFAULT NOW()
 );
-
--- Student submissions against an assignment (file also in Google Drive)
 CREATE TABLE assignment_submissions (
   id SERIAL PRIMARY KEY,
   assignment_id INTEGER REFERENCES assignments(id) ON DELETE CASCADE,
@@ -140,7 +116,6 @@ CREATE TABLE assignment_submissions (
   reviewed_at TIMESTAMP,
   UNIQUE (assignment_id, student_id)
 );
-
 CREATE INDEX idx_faculty_batches_faculty ON faculty_batches(faculty_id);
 CREATE INDEX idx_faculty_admins_admin ON faculty_admins(admin_id);
 CREATE INDEX idx_assignments_batch ON assignments(batch_id);
