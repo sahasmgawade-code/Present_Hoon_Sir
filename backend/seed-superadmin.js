@@ -1,12 +1,10 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const pool = require('./src/config/db');
-
 async function seed() {
-  const name = 'Super Admin';
-  const email = 'superadmin@presenthoonsir.com'; // change if you want
-  const plainPassword = 'ChangeMe123!';    // change this before running, or change after login
-
+  const name = 'Sahas Gawade - SUPER ADMIN';
+  const email = 'sahasmgawade@gmail.com';
+  const plainPassword = 'SahasGawade@01';
   try {
     const hash = await bcrypt.hash(plainPassword, 10);
     const result = await pool.query(
@@ -23,5 +21,4 @@ async function seed() {
     await pool.end();
   }
 }
-
 seed();
