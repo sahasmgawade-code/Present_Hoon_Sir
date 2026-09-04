@@ -1,9 +1,15 @@
 const { sendEmail } = require('../utils/mailer');
 const { escapeHtml } = require('../utils/htmlEscape');
 async function submitContactForm(req, res) {
-const { name, email, phone, organization, message } = req.body;
+  const { name, email, phone, organization, message } = req.body;
   if (!name || !email || !phone) {
     return res.status(400).json({ error: 'Name, email, and phone are required' });
+  }
+  if (!/^[A-Za-z\s.'-]+$/.test(name.trim())) {
+    return res.status(400).json({ error: 'Name should not contain numbers or special characters' });
+  }
+  if (!/^\+\d{1,4}\s?\d{6,15}$/.test(phone.trim())) {
+    return res.status(400).json({ error: 'Please provide a valid phone number' });
   }
   try {
     await sendEmail({

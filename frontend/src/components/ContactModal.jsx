@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
 import { api } from '../api/client.js';
+
+const COUNTRY_CODES = [
+  { code: '+91', label: 'IN +91' },
+  { code: '+1',  label: 'US +1' },
+  { code: '+44', label: 'UK +44' },
+  { code: '+61', label: 'AU +61' },
+  { code: '+971',label: 'AE +971' },
+  { code: '+65', label: 'SG +65' },
+  { code: '+81', label: 'JP +81' },
+  { code: '+49', label: 'DE +49' },
+  { code: '+33', label: 'FR +33' },
+  { code: '+86', label: 'CN +86' },
+];
+
 export default function ContactModal({ onClose }) {
-  const [form, setForm] = useState({
+    const [form, setForm] = useState({
     name: '',
     email: '',
+    countryCode: '+91',
     phone: '',
     organization: '',
     message: '',
@@ -13,12 +28,27 @@ export default function ContactModal({ onClose }) {
   function handleChange(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
-  async function handleSubmit(e) {
+    async function handleSubmit(e) {
     e.preventDefault();
+    if (!form.name.trim()) {
+      setError('Please enter a valid name.');
+      setStatus('error');
+      return;
+    }
+    if (form.phone.length < 6) {
+      setError('Please enter a valid phone number.');
+      setStatus('error');
+      return;
+    }
     setStatus('submitting');
     setError('');
     try {
-      await api.submitContact(form);
+      const payload = {
+        ...form,
+        phone: `${form.countryCode} ${form.phone}`,
+      };
+      delete payload.countryCode;
+      await api.submitContact(payload);
       setStatus('success');
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.');
@@ -59,6 +89,8 @@ export default function ContactModal({ onClose }) {
                 name="name"
                 placeholder="Name"
                 required
+                pattern="[A-Za-z\s.'-]+"
+                title="Name should not contain numbers"
                 value={form.name}
                 onChange={handleChange}
                 className="w-full border border-rule rounded px-3 py-2 text-sm bg-transparent"
@@ -72,15 +104,30 @@ export default function ContactModal({ onClose }) {
                 onChange={handleChange}
                 className="w-full border border-rule rounded px-3 py-2 text-sm bg-transparent"
               />
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Phone Number"
-                required
-                value={form.phone}
-                onChange={handleChange}
-                className="w-full border border-rule rounded px-3 py-2 text-sm bg-transparent"
-              />
+                            <div className="flex gap-2">
+                <select
+                  name="countryCode"
+                  value={form.countryCode}
+                  onChange={handleChange}
+                  className="border border-rule rounded px-2 py-2 text-sm bg-transparent w-28 shrink-0"
+                >
+                  {COUNTRY_CODES.map((c) => (
+                    <option key={c.code} value={c.code}>{c.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="Phone Number"
+                  required
+                  inputMode="numeric"
+                  pattern="[0-9]{6,15}"
+                  title="Phone number should contain digits only"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className="w-full border border-rule rounded px-3 py-2 text-sm bg-transparent"
+                />
+              </div>
               <input
                 type="text"
                 name="organization"
