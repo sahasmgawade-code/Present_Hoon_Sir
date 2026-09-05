@@ -30,6 +30,7 @@ async function login(req, res) {
       sameSite: 'none',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      partitioned: true,
     });
     res.json({
       admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
