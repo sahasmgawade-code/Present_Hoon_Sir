@@ -35,22 +35,14 @@ async function getOrCreateBatchFolder(batchId, batchName) {
 async function uploadFileToBatchFolder({ batchId, batchName, fileName, mimeType, buffer }) {
   const folderId = await getOrCreateBatchFolder(batchId, batchName);
   const uploadRes = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      parents: [folderId],
-    },
-    media: {
-      mimeType,
-      body: Readable.from(buffer),
-    },
+    requestBody: { name: fileName, parents: [folderId] },
+    media: { mimeType, body: Readable.from(buffer) },
     fields: 'id, webViewLink',
   });
-  await drive.permissions.create({
-    fileId: uploadRes.data.id,
-    requestBody: { role: 'reader', type: 'anyone' },
-  });
-  const fileRes = await drive.files.get({ fileId: uploadRes.data.id, fields: 'id, webViewLink' });
-  return { fileId: fileRes.data.id, webViewLink: fileRes.data.webViewLink };
+  // Deliberately no drive.permissions.create() call here anymore — the file
+  // stays private to this app's Drive account and is only ever served through
+  // our own authenticated download endpoints (see streamFileToResponse below).
+  return { fileId: uploadRes.data.id, webViewLink: uploadRes.data.webViewLink };
 }
 async function deleteFile(fileId) {
   try {
@@ -92,11 +84,20 @@ async function uploadSubmissionFile({ batchId, batchName, assignmentId, assignme
     media: { mimeType, body: Readable.from(buffer) },
     fields: 'id, webViewLink',
   });
-  await drive.permissions.create({
-    fileId: uploadRes.data.id,
-    requestBody: { role: 'reader', type: 'anyone' },
-  });
-  const fileRes = await drive.files.get({ fileId: uploadRes.data.id, fields: 'id, webViewLink' });
-  return { fileId: fileRes.data.id, webViewLink: fileRes.data.webViewLink };
+  // No public permission grant — see note in uploadFileToBatchFolder above.
+  return { fileId: uploadRes.data.id, webViewLink: uploadRes.data.webViewLink };
 }
-module.exports = { uploadFileToBatchFolder, uploadSubmissionFile, deleteFile };
+// Streams a private Drive file straight through our own server, so access
+// control is enforced by our own auth checks rather than "anyone with the link".
+async function streamFileToResponse(fileId, res) {
+  const meta = await drive.files.get({ fileId, fields: 'name, mimeType' });
+  res.setHeader('Content-Type', meta.data.mimeType || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename="${(meta.data.name || 'file').replace(/"/g, '')}"`);
+  const fileRes = await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' });
+  fileRes.data.on('error', (err) => {
+    console.error('Drive stream error:', err);
+    if (!res.headersSent) res.status(500).end();
+  }).pipe(res);
+}
+
+module.exports = { uploadFileToBatchFolder, uploadSubmissionFile, deleteFile, streamFileToResponse };

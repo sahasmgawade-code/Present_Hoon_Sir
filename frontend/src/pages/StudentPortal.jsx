@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api/client.js';
+import { api, BASE } from '../api/client.js';
 import { useStudentAuth } from '../context/StudentAuthContext.jsx';
 const STATUS_LABEL = { pending: 'Pending Review', completed: 'Completed', incomplete: 'Incomplete' };
 const STATUS_STYLE = {
@@ -63,7 +63,7 @@ function AssignmentsTab() {
               </p>
               {a.description && <p className="text-sm text-ink/70 mt-2">{a.description}</p>}
             </div>
-            <a href={a.drive_file_url} target="_blank" rel="noreferrer" className="text-xs underline text-forestDark shrink-0">
+            <a href={`${BASE}/student-auth/assignments/${a.id}/file`} target="_blank" rel="noreferrer" className="text-xs underline text-forestDark shrink-0">
               View PDF
             </a>
           </div>
@@ -72,7 +72,7 @@ function AssignmentsTab() {
               <span className={`text-xs font-mono uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[a.status]}`}>
                 {STATUS_LABEL[a.status]}
               </span>
-              <a href={a.submission_url} target="_blank" rel="noreferrer" className="underline text-forestDark">
+              <a href={`${BASE}/student-auth/assignments/${a.id}/submission-file`} target="_blank" rel="noreferrer" className="underline text-forestDark">
                 {a.submission_file_name}
               </a>
               {a.remark && <span className="text-ink/60">— {a.remark}</span>}

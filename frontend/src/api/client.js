@@ -180,4 +180,4 @@ async function triggerFileDownload(response) {
   a.remove();
   URL.revokeObjectURL(url);
 }
-export { ensureDeviceToken, getCsrfToken };
+export { ensureDeviceToken, getCsrfToken, BASE };

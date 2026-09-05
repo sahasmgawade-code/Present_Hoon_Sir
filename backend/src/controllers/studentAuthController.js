@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
-const { uploadSubmissionFile, deleteFile } = require('../utils/googleDrive');
+const { uploadSubmissionFile, deleteFile, streamFileToResponse } = require('../utils/googleDrive');
 async function studentLogin(req, res) {
   const { loginId, password } = req.body;
   if (!loginId || !password) {
@@ -171,4 +171,34 @@ function studentLogout(req, res) {
   res.clearCookie('phsams_student_token', { httpOnly: true, secure: true, sameSite: 'strict', path: '/' });
   res.json({ message: 'Logged out' });
 }
-module.exports = { studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studentLogout };
+async function downloadAssignmentFile(req, res) {
+  const { assignmentId } = req.params;
+  const { batchId } = req.student;
+  try {
+    const assignmentRes = await pool.query('SELECT drive_file_id, batch_id FROM assignments WHERE id = $1', [assignmentId]);
+    if (assignmentRes.rows.length === 0) return res.status(404).json({ error: 'Assignment not found' });
+    if (assignmentRes.rows[0].batch_id !== batchId) {
+      return res.status(403).json({ error: 'This assignment is not for your batch' });
+    }
+    await streamFileToResponse(assignmentRes.rows[0].drive_file_id, res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+}
+async function downloadSubmissionFile(req, res) {
+  const { assignmentId } = req.params;
+  const { studentId } = req.student;
+  try {
+    const subRes = await pool.query(
+      'SELECT drive_file_id FROM assignment_submissions WHERE assignment_id = $1 AND student_id = $2',
+      [assignmentId, studentId]
+    );
+    if (subRes.rows.length === 0) return res.status(404).json({ error: 'Submission not found' });
+    await streamFileToResponse(subRes.rows[0].drive_file_id, res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+}
+module.exports = { studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studentLogout, downloadAssignmentFile, downloadSubmissionFile };

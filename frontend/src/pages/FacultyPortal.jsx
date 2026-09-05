@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api/client.js';
+import { api, BASE } from '../api/client.js';
 import { useFacultyAuth } from '../context/FacultyAuthContext.jsx';
 const STATUS_LABEL = { pending: 'Pending', completed: 'Completed', incomplete: 'Incomplete' };
 const STATUS_STYLE = {
@@ -145,7 +145,7 @@ function SubmissionsPanel({ assignmentId, onClose }) {
               <div className="flex items-center gap-2 flex-wrap">
                 {s.submission_id ? (
                   <>
-                    <a href={s.drive_file_url} target="_blank" rel="noreferrer" className="text-xs underline text-forestDark">
+                    <a href={`${BASE}/faculty-portal/submissions/${s.submission_id}/file`} target="_blank" rel="noreferrer" className="text-xs underline text-forestDark">
                       {s.file_name}
                     </a>
                     <span className={`text-xs font-mono uppercase tracking-wide px-2 py-0.5 rounded ${STATUS_STYLE[s.status]}`}>
@@ -240,7 +240,7 @@ function AssignmentsTab({ batchId }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <a href={a.drive_file_url} target="_blank" rel="noreferrer" className="text-xs underline text-forestDark">
+                  <a href={`${BASE}/faculty-portal/assignments/${a.id}/file`} target="_blank" rel="noreferrer" className="text-xs underline text-forestDark">
                     View PDF
                   </a>
                   <button

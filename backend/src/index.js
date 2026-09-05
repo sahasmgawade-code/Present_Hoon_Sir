@@ -16,6 +16,7 @@ const facultyAuthRoutes = require('./routes/facultyAuthRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const facultyPortalRoutes = require('./routes/facultyPortalRoutes');
 const app = express();
+app.set('trust proxy', 1); // required so express-rate-limit sees the real client IP behind Render's proxy
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000', // keep local dev working

@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const {studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studentLogout} = require('../controllers/studentAuthController');
+const {studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studentLogout, downloadAssignmentFile, downloadSubmissionFile} = require('../controllers/studentAuthController');
 const { verifyStudentToken } = require('../middleware/auth');
 const { uploadSubmissionFile } = require('../middleware/upload');
 const { doubleCsrfProtection } = require('../middleware/csrf');
-router.post('/login', doubleCsrfProtection, studentLogin);
+const { loginLimiter } = require('../middleware/rateLimit');
+router.post('/login', loginLimiter, doubleCsrfProtection, studentLogin);
 router.post('/logout', studentLogout);
 router.get('/me', verifyStudentToken, getMyAttendance);
 router.get('/assignments', verifyStudentToken, getMyAssignments);
+router.get('/assignments/:assignmentId/file', verifyStudentToken, downloadAssignmentFile);
+router.get('/assignments/:assignmentId/submission-file', verifyStudentToken, downloadSubmissionFile);
 router.post('/assignments/:assignmentId/submit', verifyStudentToken, uploadSubmissionFile, submitAssignment);
 module.exports = router;

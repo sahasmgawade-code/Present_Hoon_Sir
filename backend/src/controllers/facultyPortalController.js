@@ -1,5 +1,5 @@
 const pool = require('../config/db');
-const { uploadFileToBatchFolder, uploadSubmissionFile, deleteFile } = require('../utils/googleDrive');
+const { uploadFileToBatchFolder, uploadSubmissionFile, deleteFile, streamFileToResponse } = require('../utils/googleDrive');
 async function hasBatchAccess(facultyId, batchId) {
   const result = await pool.query(
     'SELECT 1 FROM faculty_batches WHERE faculty_id = $1 AND batch_id = $2',
@@ -174,4 +174,39 @@ async function gradeSubmission(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = {getMyBatches, getBatchStudents, createAssignment, listBatchAssignments, deleteAssignment, listSubmissions, gradeSubmission};
+async function downloadAssignmentFile(req, res) {
+  const { id } = req.params; // assignment id
+  try {
+    const assignmentRes = await pool.query('SELECT * FROM assignments WHERE id = $1', [id]);
+    if (assignmentRes.rows.length === 0) return res.status(404).json({ error: 'Assignment not found' });
+    const assignment = assignmentRes.rows[0];
+    if (!(await hasBatchAccess(req.faculty.id, assignment.batch_id))) {
+      return res.status(403).json({ error: 'No access to this batch' });
+    }
+    await streamFileToResponse(assignment.drive_file_id, res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+}
+async function downloadSubmissionFile(req, res) {
+  const { id } = req.params; // submission id
+  try {
+    const subRes = await pool.query(
+      `SELECT sub.drive_file_id, a.batch_id
+       FROM assignment_submissions sub
+       JOIN assignments a ON a.id = sub.assignment_id
+       WHERE sub.id = $1`,
+      [id]
+    );
+    if (subRes.rows.length === 0) return res.status(404).json({ error: 'Submission not found' });
+    if (!(await hasBatchAccess(req.faculty.id, subRes.rows[0].batch_id))) {
+      return res.status(403).json({ error: 'No access to this batch' });
+    }
+    await streamFileToResponse(subRes.rows[0].drive_file_id, res);
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) res.status(500).json({ error: 'Server error' });
+  }
+}
+module.exports = {getMyBatches, getBatchStudents, createAssignment, listBatchAssignments, deleteAssignment, listSubmissions, gradeSubmission, downloadAssignmentFile, downloadSubmissionFile};
