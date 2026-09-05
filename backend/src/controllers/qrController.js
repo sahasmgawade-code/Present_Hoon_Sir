@@ -173,7 +173,7 @@ function issueDeviceToken(req, res) {
     res.cookie('phsams_device_token', deviceToken, {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
       maxAge: 365 * 24 * 60 * 60 * 1000, // long-lived so the dedupe/rate-limit logic keeps working across visits
     });

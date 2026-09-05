@@ -11,7 +11,7 @@ const {
   cookieOptions: {
     httpOnly: true,
     secure: true,
-    sameSite: 'strict',
+    sameSite: 'none',
     path: '/',
   },
   getTokenFromRequest: (req) => req.body.csrfToken,
@@ -26,7 +26,7 @@ function ensureCsrfSessionId(req, res, next) {
     res.cookie('phsams_csrf_id', id, {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: 'none',
       path: '/',
       maxAge: 24 * 60 * 60 * 1000,
     });
