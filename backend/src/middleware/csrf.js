@@ -13,6 +13,7 @@ const {
     secure: true,
     sameSite: 'none',
     path: '/',
+    partitioned: true,
   },
   getTokenFromRequest: (req) => req.body.csrfToken,
   size: 64,
@@ -29,6 +30,7 @@ function ensureCsrfSessionId(req, res, next) {
       sameSite: 'none',
       path: '/',
       maxAge: 24 * 60 * 60 * 1000,
+      partitioned: true,
     });
     req.cookies.phsams_csrf_id = id;
   }

@@ -31,6 +31,7 @@ async function facultyLogin(req, res) {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      partitioned: true,
       path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -114,7 +115,7 @@ async function setFacultyPassword(req, res) {
   }
 }
 function facultyLogout(req, res) {
-  res.clearCookie('phsams_faculty_token', { httpOnly: true, secure: true, sameSite: 'none', path: '/' });
+  res.clearCookie('phsams_faculty_token', { httpOnly: true, secure: true, sameSite: 'none', partitioned: true,path: '/' });
   res.json({ message: 'Logged out' });
 }
 module.exports = { facultyLogin, changeFacultyPassword, verifyFacultyResetToken, setFacultyPassword, facultyLogout };

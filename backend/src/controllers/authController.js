@@ -111,7 +111,7 @@ async function setPassword(req, res) {
   }
 }
 function logout(req, res) {
-  res.clearCookie('phsams_token', { httpOnly: true, secure: true, sameSite: 'none', path: '/' });
+  res.clearCookie('phsams_token', { httpOnly: true, secure: true, sameSite: 'none', path: '/', partitioned: true });
   res.json({ message: 'Logged out' });
 }
 module.exports = { login, changePassword, verifyResetToken, setPassword, logout };
