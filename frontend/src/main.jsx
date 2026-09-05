@@ -10,7 +10,7 @@ import './index.css';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ThemeProvider>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={[window.location.pathname + window.location.search]}>
         <AuthProvider>
           <StudentAuthProvider>
             <FacultyAuthProvider>
