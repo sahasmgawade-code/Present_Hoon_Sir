@@ -24,8 +24,14 @@ async function login(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    res.cookie('phsams_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
     res.json({
-      token,
       admin: { id: admin.id, name: admin.name, email: admin.email, role: admin.role },
     });
   } catch (err) {
@@ -104,4 +110,8 @@ async function setPassword(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { login, changePassword, verifyResetToken, setPassword };
+function logout(req, res) {
+  res.clearCookie('phsams_token', { httpOnly: true, secure: true, sameSite: 'strict', path: '/' });
+  res.json({ message: 'Logged out' });
+}
+module.exports = { login, changePassword, verifyResetToken, setPassword, logout };

@@ -6,17 +6,19 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem('phsams_admin');
     return stored ? JSON.parse(stored) : null;
   });
-  const login = useCallback(async (email, password) => {
-    const data = await api.login(email, password);
-    localStorage.setItem('phsams_token', data.token);
+  const login = useCallback(async (email, password, csrfToken) => {
+    const data = await api.login(email, password, csrfToken);
     localStorage.setItem('phsams_admin', JSON.stringify(data.admin));
     setAdmin(data.admin);
     return data.admin;
   }, []);
-  const logout = useCallback(() => {
-    localStorage.removeItem('phsams_token');
-    localStorage.removeItem('phsams_admin');
-    setAdmin(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.logout();
+    } finally {
+      localStorage.removeItem('phsams_admin');
+      setAdmin(null);
+    }
   }, []);
   const updateOwnName = useCallback((newName) => {
     setAdmin((prev) => {

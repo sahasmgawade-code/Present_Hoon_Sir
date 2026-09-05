@@ -1,33 +1,19 @@
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api';
-function getToken() {
-  return localStorage.getItem('phsams_token');
+async function getCsrfToken() {
+  const res = await fetch(`${BASE}/csrf-token`, { credentials: 'include' });
+  const data = await res.json();
+  return data.csrfToken;
 }
-function getStudentToken() {
-  return localStorage.getItem('phsams_student_token');
+async function ensureDeviceToken() {
+  // Server sets the phsams_device_token httpOnly cookie if the browser doesn't have one yet.
+  await fetch(`${BASE}/qr/device-token`, { credentials: 'include' });
 }
-function getFacultyToken() {
-  return localStorage.getItem('phsams_faculty_token');
-}
-function getDeviceToken() {
-  let deviceToken = localStorage.getItem('phsams_device_token');
-  if (!deviceToken) {
-    deviceToken = crypto.randomUUID();
-    localStorage.setItem('phsams_device_token', deviceToken);
-  }
-  return deviceToken;
-}
-function tokenFor(authType) {
-  if (authType === 'student') return getStudentToken();
-  if (authType === 'faculty') return getFacultyToken();
-  return getToken();
-}
-async function request(path, { method = 'GET', body, headers = {}, raw = false, authType = 'admin' } = {}) {
-  const token = tokenFor(authType);
+async function request(path, { method = 'GET', body, headers = {}, raw = false } = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
+    credentials: 'include', // send the httpOnly auth cookie automatically
     headers: {
       ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -46,13 +32,10 @@ async function request(path, { method = 'GET', body, headers = {}, raw = false, 
   }
   return data;
 }
-async function requestForm(path, formData, { method = 'POST', authType = 'admin' } = {}) {
-  const token = tokenFor(authType);
+async function requestForm(path, formData, { method = 'POST' } = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    credentials: 'include',
     body: formData,
   });
   let data = null;
@@ -69,7 +52,8 @@ async function requestForm(path, formData, { method = 'POST', authType = 'admin'
   return data;
 }
 export const api = {
-  login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password } }),
+  login: (email, password, csrfToken) => request('/auth/login', { method: 'POST', body: { email, password, csrfToken } }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   changePassword: (currentPassword, newPassword) =>
     request('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
   listAdmins: () => request('/admins'),
@@ -110,8 +94,9 @@ export const api = {
     request(`/students/${id}/blacklist`, { method: 'PATCH', body: { blacklisted } }),
   setStudentCredentials: (studentId, loginId, password) =>
     request(`/students/${studentId}/credentials`, { method: 'PATCH', body: { loginId, password } }),
-  studentLogin: (loginId, password) =>
-    request('/student-auth/login', { method: 'POST', body: { loginId, password } }),
+  studentLogin: (loginId, password, csrfToken) =>
+    request('/student-auth/login', { method: 'POST', body: { loginId, password, csrfToken } }),
+  studentLogout: () => request('/student-auth/logout', { method: 'POST' }),
   getMyAttendance: () => request('/student-auth/me', { authType: 'student' }),
   getMyAssignments: () => request('/student-auth/assignments', { authType: 'student' }),
   submitAssignment: (assignmentId, formData) =>
@@ -137,8 +122,9 @@ export const api = {
     return request(`/reports/batch/${batchId}/matrix${qs ? `?${qs}` : ''}`);
   },
   getStudentReport: (studentId) => request(`/reports/student/${studentId}`),
-  facultyLogin: (email, password) =>
-    request('/faculty-auth/login', { method: 'POST', body: { email, password } }),
+  facultyLogin: (email, password, csrfToken) =>
+    request('/faculty-auth/login', { method: 'POST', body: { email, password, csrfToken } }),
+  facultyLogout: () => request('/faculty-auth/logout', { method: 'POST' }),
   verifyFacultyResetToken: (token) => request(`/faculty-auth/verify-reset-token/${token}`),
   setFacultyPassword: (token, password) =>
     request('/faculty-auth/set-password', { method: 'POST', body: { token, password } }),
@@ -194,4 +180,4 @@ async function triggerFileDownload(response) {
   a.remove();
   URL.revokeObjectURL(url);
 }
-export { getToken, getDeviceToken, getStudentToken, getFacultyToken };
+export { ensureDeviceToken, getCsrfToken };

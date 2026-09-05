@@ -45,10 +45,11 @@ async function getSessionStatus(req, res) {
 }
 async function submitAttendance(req, res) {
   const { token } = req.params;
-  const { firstName, lastName, deviceToken } = req.body;
+  const { firstName, lastName } = req.body;
+  const deviceToken = req.cookies.phsams_device_token;
   const urn = (req.body.urn || '').replace(/\s+/g, '');
   if (!urn || !firstName || !lastName || !deviceToken) {
-    return res.status(400).json({ error: 'urn, firstName, lastName and deviceToken are required' });
+    return res.status(400).json({ error: 'urn, firstName, lastName are required, and this device could not be verified' });
   }
   try {
     const sessionRes = await pool.query('SELECT * FROM qr_sessions WHERE session_token = $1', [token]);
@@ -166,4 +167,17 @@ async function downloadSessionReport(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { generateSession, getSessionStatus, submitAttendance, getSessionReport, downloadSessionReport };
+function issueDeviceToken(req, res) {
+  if (!req.cookies.phsams_device_token) {
+    const deviceToken = uuidv4();
+    res.cookie('phsams_device_token', deviceToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60 * 1000, // long-lived so the dedupe/rate-limit logic keeps working across visits
+    });
+  }
+  res.status(204).end();
+}
+module.exports = { generateSession, getSessionStatus, submitAttendance, getSessionReport, downloadSessionReport, issueDeviceToken };

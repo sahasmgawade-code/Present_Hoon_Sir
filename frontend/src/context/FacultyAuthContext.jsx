@@ -6,17 +6,19 @@ export function FacultyAuthProvider({ children }) {
     const stored = localStorage.getItem('phsams_faculty');
     return stored ? JSON.parse(stored) : null;
   });
-  const login = useCallback(async (email, password) => {
-    const data = await api.facultyLogin(email, password);
-    localStorage.setItem('phsams_faculty_token', data.token);
+  const login = useCallback(async (email, password, csrfToken) => {
+    const data = await api.facultyLogin(email, password, csrfToken);
     localStorage.setItem('phsams_faculty', JSON.stringify(data.faculty));
     setFaculty(data.faculty);
     return data.faculty;
   }, []);
-  const logout = useCallback(() => {
-    localStorage.removeItem('phsams_faculty_token');
-    localStorage.removeItem('phsams_faculty');
-    setFaculty(null);
+  const logout = useCallback(async () => {
+    try {
+      await api.facultyLogout();
+    } finally {
+      localStorage.removeItem('phsams_faculty');
+      setFaculty(null);
+    }
   }, []);
   return (
     <FacultyAuthContext.Provider value={{ faculty, login, logout }}>

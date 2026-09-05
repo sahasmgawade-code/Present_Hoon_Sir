@@ -1,18 +1,19 @@
 const jwt = require('jsonwebtoken');
+
 function verifyToken(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = req.cookies.phsams_token;
+  if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = decoded; 
+    req.admin = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
+
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.admin || !allowedRoles.includes(req.admin.role)) {
@@ -21,29 +22,29 @@ function requireRole(...allowedRoles) {
     next();
   };
 }
+
 function verifyStudentToken(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = req.cookies.phsams_student_token;
+  if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.type !== 'student') {
       return res.status(403).json({ error: 'Invalid token type' });
     }
-    req.student = decoded; // { studentId, batchId, type: 'student' }
+    req.student = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
+
 function verifyFacultyToken(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = req.cookies.phsams_faculty_token;
+  if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.type !== 'faculty') {
@@ -55,12 +56,12 @@ function verifyFacultyToken(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
+
 function verifyAdminOrFaculty(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const token = req.cookies.phsams_faculty_token || req.cookies.phsams_token;
+  if (!token) {
     return res.status(401).json({ error: 'No token provided' });
   }
-  const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.type === 'faculty') {
@@ -77,4 +78,5 @@ function verifyAdminOrFaculty(req, res, next) {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
+
 module.exports = { verifyToken, requireRole, verifyStudentToken, verifyFacultyToken, verifyAdminOrFaculty };

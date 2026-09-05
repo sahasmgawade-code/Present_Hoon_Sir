@@ -27,8 +27,14 @@ async function facultyLogin(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    res.cookie('phsams_faculty_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
     res.json({
-      token,
       faculty: { id: faculty.id, name: faculty.name, email: faculty.email },
     });
   } catch (err) {
@@ -107,4 +113,8 @@ async function setFacultyPassword(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { facultyLogin, changeFacultyPassword, verifyFacultyResetToken, setFacultyPassword };
+function facultyLogout(req, res) {
+  res.clearCookie('phsams_faculty_token', { httpOnly: true, secure: true, sameSite: 'strict', path: '/' });
+  res.json({ message: 'Logged out' });
+}
+module.exports = { facultyLogin, changeFacultyPassword, verifyFacultyResetToken, setFacultyPassword, facultyLogout };

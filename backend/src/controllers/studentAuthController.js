@@ -25,8 +25,14 @@ async function studentLogin(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
+    res.cookie('phsams_student_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
     res.json({
-      token,
       student: {
         id: student.id,
         firstName: student.first_name,
@@ -161,4 +167,8 @@ async function submitAssignment(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 }
-module.exports = { studentLogin, getMyAttendance, getMyAssignments, submitAssignment };
+function studentLogout(req, res) {
+  res.clearCookie('phsams_student_token', { httpOnly: true, secure: true, sameSite: 'strict', path: '/' });
+  res.json({ message: 'Logged out' });
+}
+module.exports = { studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studentLogout };

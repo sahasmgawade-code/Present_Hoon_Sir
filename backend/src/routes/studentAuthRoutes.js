@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const {studentLogin, getMyAttendance, getMyAssignments, submitAssignment} = require('../controllers/studentAuthController');
+const {studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studentLogout} = require('../controllers/studentAuthController');
 const { verifyStudentToken } = require('../middleware/auth');
 const { uploadSubmissionFile } = require('../middleware/upload');
-router.post('/login', studentLogin);
+const { doubleCsrfProtection } = require('../middleware/csrf');
+router.post('/login', doubleCsrfProtection, studentLogin);
+router.post('/logout', studentLogout);
 router.get('/me', verifyStudentToken, getMyAttendance);
 router.get('/assignments', verifyStudentToken, getMyAssignments);
 router.post('/assignments/:assignmentId/submit', verifyStudentToken, uploadSubmissionFile, submitAssignment);

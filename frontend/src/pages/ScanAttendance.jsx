@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { api, getDeviceToken } from '../api/client.js';
+import { api } from '../api/client.js';
+import { ensureDeviceToken } from '../api/client.js';
 function useCountdown(expiresAt) {
   const [secondsLeft, setSecondsLeft] = useState(null);
   useEffect(() => {
@@ -36,6 +37,7 @@ export default function ScanAttendance() {
   const secondsLeft = useCountdown(status === 'open' ? expiresAt : null);
   const checkStatus = useCallback(async () => {
     try {
+      await ensureDeviceToken();
       const data = await api.getQrSessionStatus(token);
       setExpiresAt(data.expiresAt);
       setStatus(data.expired ? 'expired' : 'open');
@@ -61,7 +63,6 @@ export default function ScanAttendance() {
         urn: urn.replace(/\s+/g, ''),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        deviceToken: getDeviceToken(),
       });
       setConfirmedName(data.message || 'Attendance marked.');
       setSubmitted(true);

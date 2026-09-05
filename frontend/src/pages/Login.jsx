@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getCsrfToken } from '../api/client.js';
 import Logo from '../components/Logo.jsx';
 import Footer from '../components/Footer.jsx';
 export default function Login() {
@@ -10,12 +11,16 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [csrfToken, setCsrfToken] = useState('');
+  useEffect(() => {
+    getCsrfToken().then(setCsrfToken).catch(() => setCsrfToken(''));
+  }, []);
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, csrfToken);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed');
@@ -33,6 +38,7 @@ export default function Login() {
           </div>
         </div>
         <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-8 space-y-5">
+          <input type="hidden" name="csrfToken" value={csrfToken} />
           <div>
             <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
               Email

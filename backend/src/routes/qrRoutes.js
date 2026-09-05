@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const {generateSession, getSessionStatus, submitAttendance, getSessionReport, downloadSessionReport} = require('../controllers/qrController');
+const {generateSession, getSessionStatus, submitAttendance, getSessionReport, downloadSessionReport, issueDeviceToken} = require('../controllers/qrController');
 const { verifyAdminOrFaculty } = require('../middleware/auth');
+router.get('/device-token', issueDeviceToken);
 router.post('/batch/:batchId/generate', verifyAdminOrFaculty, generateSession);
 router.get('/:sessionId/report', verifyAdminOrFaculty, getSessionReport);
 router.get('/:sessionId/download', verifyAdminOrFaculty, downloadSessionReport);

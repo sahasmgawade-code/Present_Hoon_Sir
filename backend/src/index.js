@@ -2,6 +2,7 @@ const dns = require('dns');
 dns.setDefaultResultOrder('ipv4first');
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const adminRoutes = require('./routes/adminRoutes');
 const authRoutes = require('./routes/authRoutes');
@@ -27,8 +28,15 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
+  credentials: true, // required so the browser will send/receive the httpOnly auth cookies
 }));
 app.use(express.json());
+app.use(cookieParser());
+const { generateCsrfToken, ensureCsrfSessionId } = require('./middleware/csrf');
+app.get('/api/csrf-token', ensureCsrfSessionId, (req, res) => {
+  const csrfToken = generateCsrfToken(req, res);
+  res.json({ csrfToken });
+});
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
