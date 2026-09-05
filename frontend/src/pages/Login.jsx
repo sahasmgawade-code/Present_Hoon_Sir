@@ -11,23 +11,20 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [csrfToken, setCsrfToken] = useState('');
-  useEffect(() => {
-    getCsrfToken().then(setCsrfToken).catch(() => setCsrfToken(''));
-  }, []);
   async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      await login(email, password, csrfToken);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setLoading(false);
-    }
+  e.preventDefault();
+  setError('');
+  setLoading(true);
+  try {
+    const freshCsrfToken = await getCsrfToken();
+    await login(email, password, freshCsrfToken);
+    navigate('/dashboard');
+  } catch (err) {
+    setError(err.message || 'Login failed');
+  } finally {
+    setLoading(false);
   }
+}
   return (
     <div className="min-h-screen bg-transparent">
       <div className="flex items-center justify-center px-6 py-16">
@@ -38,7 +35,6 @@ export default function Login() {
           </div>
         </div>
         <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-8 space-y-5">
-          <input type="hidden" name="csrfToken" value={csrfToken} />
           <div>
             <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">
               Email

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useFacultyAuth } from '../context/FacultyAuthContext.jsx';
 import { getCsrfToken } from '../api/client.js';
@@ -9,10 +9,6 @@ export default function FacultyLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [csrfToken, setCsrfToken] = useState('');
-  useEffect(() => {
-    getCsrfToken().then(setCsrfToken).catch(() => setCsrfToken(''));
-  }, []);
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -22,6 +18,7 @@ export default function FacultyLogin() {
     }
     setBusy(true);
     try {
+      const csrfToken = await getCsrfToken();
       await login(email.trim(), password, csrfToken);
       navigate('/faculty/portal');
     } catch (err) {
@@ -37,7 +34,6 @@ export default function FacultyLogin() {
         <p className="text-sm text-ink/50 mt-1">Manage your batches & assignments.</p>
       </div>
       <form onSubmit={handleSubmit} className="bg-card border border-rule rounded-lg p-6 space-y-4">
-        <input type="hidden" name="csrfToken" value={csrfToken} />
         <div>
           <label className="block text-xs font-mono uppercase tracking-wide text-ink/60 mb-1.5">Email</label>
           <input
