@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "cookie-parser": "^1.4.7",
-    "csrf-csrf": "^4.0.3",
-    "file-type": "^22.0.2"
-  }
-}

@@ -4,7 +4,11 @@ const pool = require('./src/config/db');
 async function seed() {
   const name = 'Sahas Gawade - SUPER ADMIN';
   const email = 'sahasmgawade@gmail.com';
-  const plainPassword = 'SahasGawade@01';
+  const plainPassword = process.env.SEED_SUPERADMIN_PASSWORD;
+if (!plainPassword) {
+  console.error('Set SEED_SUPERADMIN_PASSWORD in your .env before running this script.');
+  process.exit(1);
+}
   try {
     const hash = await bcrypt.hash(plainPassword, 10);
     const result = await pool.query(
