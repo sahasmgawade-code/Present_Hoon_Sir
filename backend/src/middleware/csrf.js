@@ -2,7 +2,7 @@ const { doubleCsrf } = require('csrf-csrf');
 const crypto = require('crypto');
 
 const {
-  generateCsrfToken,
+  generateToken,
   doubleCsrfProtection,
 } = doubleCsrf({
   getSecret: () => process.env.CSRF_SECRET,
@@ -14,7 +14,7 @@ const {
     sameSite: 'strict',
     path: '/',
   },
-  getCsrfTokenFromRequest: (req) => req.body.csrfToken,
+  getTokenFromRequest: (req) => req.body.csrfToken,
   size: 64,
 });
 
@@ -35,4 +35,4 @@ function ensureCsrfSessionId(req, res, next) {
   next();
 }
 
-module.exports = { generateCsrfToken, doubleCsrfProtection, ensureCsrfSessionId };
+module.exports = { generateToken, doubleCsrfProtection, ensureCsrfSessionId };

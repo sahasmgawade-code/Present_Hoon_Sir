@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
-
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -31,10 +31,10 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-const { generateCsrfToken, ensureCsrfSessionId } = require('./middleware/csrf');
+const { generateToken, ensureCsrfSessionId } = require('./middleware/csrf');
 
 app.get('/api/csrf-token', ensureCsrfSessionId, (req, res) => {
-  const csrfToken = generateCsrfToken(req, res);
+  const csrfToken = generateToken(req, res);
   res.json({ csrfToken });
 });
 
