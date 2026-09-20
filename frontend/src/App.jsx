@@ -23,6 +23,7 @@ import FacultyPortal from './pages/FacultyPortal.jsx';
 import FacultyProtectedRoute from './components/FacultyProtectedRoute.jsx';
 import ManageFaculty from './pages/ManageFaculty.jsx';
 import FacultySettings from './pages/FacultySettings.jsx';
+import NotFound from './pages/NotFound.jsx';
 function StubPage({ title }) {
   return (
     <div className="text-center py-24">
@@ -35,6 +36,7 @@ function StubPage({ title }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="*" element={<NotFound />} />
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/set-password/:token" element={<SetPassword />} />
