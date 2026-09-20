@@ -1,548 +1,268 @@
 import React, { useState } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import Logo from '../components/Logo.jsx';
-import Footer from '../components/Footer.jsx';
-import ContactModal from '../components/ContactModal.jsx';
+import { useFacultyAuth } from '../context/FacultyAuthContext.jsx';
+import { useStudentAuth } from '../context/StudentAuthContext.jsx';
+import { getCsrfToken } from '../api/client.js';
+import { LogoMark } from '../components/Logo.jsx';
 
-const navLinks = [
-  { label: 'Overview', href: '#overview' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
+const ROLES = {
+  admin: {
+    label: 'Admin',
+    title: 'ADMIN LOGIN',
+    idLabel: 'Email',
+    idType: 'email',
+    idPlaceholder: 'Email',
+    redirect: '/dashboard',
+    blurb: 'Manage batches, faculty, students, QR attendance and reports from one place.',
+  },
+  faculty: {
+    label: 'Faculty',
+    title: 'FACULTY LOGIN',
+    idLabel: 'Email',
+    idType: 'email',
+    idPlaceholder: 'Email',
+    redirect: '/faculty/portal',
+    blurb: 'Manage your batches, share updates and review assignments.',
+  },
+  student: {
+    label: 'Student',
+    title: 'STUDENT LOGIN',
+    idLabel: 'Login ID',
+    idType: 'text',
+    idPlaceholder: 'Login ID',
+    redirect: '/student/portal',
+    blurb: 'Check your batch, attendance status and submit assignments.',
+  },
+};
+
+const TABS = ['admin', 'faculty', 'student'];
+
+// Site palette
+const FOREST = '#2F6F4F';
+const FOREST_DARK = '#234F38';
+const BRICK = '#A6432F';
+const AMBER = '#B8842E';
+const PAPER = '#EFEEE6';
+const CARD = '#F8F7F1';
+const RULE = '#C9CABB';
+
+const BTN_BG = `linear-gradient(90deg, ${FOREST}, ${FOREST_DARK})`;
+
+const PILLS = [
+  { left: '-4%', bottom: '-6%', w: 190, h: 64, rot: -55, bg: `linear-gradient(90deg,${AMBER},#D9A552)` },
+  { left: '14%', bottom: '2%', w: 230, h: 70, rot: -55, bg: `linear-gradient(90deg,#D9A552,${BRICK})` },
+  { left: '40%', bottom: '-4%', w: 210, h: 66, rot: -55, bg: `linear-gradient(90deg,${AMBER},${BRICK})` },
+  { left: '58%', bottom: '10%', w: 190, h: 58, rot: -55, bg: 'linear-gradient(90deg,#3A8DA8,#8FD3E8)' },
+  { left: '2%', bottom: '28%', w: 120, h: 8, rot: -55, bg: 'rgba(217,165,82,0.85)' },
+  { left: '30%', bottom: '38%', w: 150, h: 8, rot: -55, bg: 'rgba(143,211,232,0.75)' },
+  { left: '52%', bottom: '32%', w: 110, h: 8, rot: -55, bg: 'rgba(217,165,82,0.75)' },
 ];
 
-const coreFeatures = [
-  {
-    tag: '01',
-    title: 'QR Attendance',
-    desc: 'Generate a unique, time-bound QR code per batch or lecture. Students scan with any phone camera — attendance logs instantly, no app install needed.',
-  },
-  {
-    tag: '02',
-    title: 'Reports (Excel & PDF)',
-    desc: 'Pull attendance and performance reports by batch, date range, or student, and export to Excel or PDF in one click for records and audits.',
-  },
-  {
-    tag: '03',
-    title: 'Email & SMS Updates',
-    desc: 'Automatically notify parents and students about attendance, assignments, and announcements via email and SMS — no manual follow-up required.',
-  },
-  {
-    tag: '04',
-    title: 'Admin / Faculty / Student Portals',
-    desc: 'Separate, role-based dashboards for admins, faculty, and students, each with the exact tools and visibility they need — nothing more, nothing less.',
-  },
-  {
-    tag: '05',
-    title: 'Assignment Submission',
-    desc: 'Faculty post assignments with deadlines, students submit directly through their portal, and submissions are tracked and graded in one place.',
-  },
-];
-
-const audience = [
-  {
-    title: 'College & university admins',
-    desc: 'Manage multiple batches, admins, and departments from a single dashboard.',
-  },
-  {
-    title: 'Faculty & lecturers',
-    desc: 'Take attendance, post assignments, and message parents — all from one portal.',
-  },
-  {
-    title: 'Students',
-    desc: 'Scan to mark attendance, submit assignments, and stay updated automatically.',
-  },
-];
-
-const steps = [
-  {
-    n: '01',
-    title: 'Create a batch, generate a QR',
-    desc: 'Set up a batch for the class or lecture and generate a fresh, time-bound QR code.',
-  },
-  {
-    n: '02',
-    title: 'Students scan & submit',
-    desc: 'Students scan to check in, submit assignments, and receive email/SMS updates automatically.',
-  },
-  {
-    n: '03',
-    title: 'Review, edit & export',
-    desc: 'Admins and faculty review records and export attendance/performance reports to Excel or PDF.',
-  },
-];
-
-// ---- Pricing plans ----
-const plans = [
-  {
-    name: 'Basic',
-    price: 1000,
-    highlight: false,
-    features: {
-      qr: true,
-      reports: true,
-      email: false,
-      sms: false,
-      portals: true,
-      assignments: true,
-    },
-  },
-  {
-    name: 'Email Updates',
-    price: 1250,
-    highlight: false,
-    features: {
-      qr: true,
-      reports: true,
-      email: true,
-      sms: false,
-      portals: true,
-      assignments: true,
-    },
-  },
-  {
-    name: 'SMS Updates',
-    price: 1250,
-    highlight: false,
-    features: {
-      qr: true,
-      reports: true,
-      email: false,
-      sms: true,
-      portals: true,
-      assignments: true,
-    },
-  },
-  {
-    name: 'Email & SMS',
-    price: 1500,
-    highlight: true,
-    features: {
-      qr: true,
-      reports: true,
-      email: true,
-      sms: true,
-      portals: true,
-      assignments: true,
-    },
-  },
-];
-
-const pricingRows = [
-  { key: 'qr', label: 'QR Attendance' },
-  { key: 'reports', label: 'Reports (Excel & PDF)' },
-  { key: 'email', label: 'Email Updates' },
-  { key: 'sms', label: 'SMS Updates' },
-  { key: 'portals', label: 'Admin / Faculty / Student Portals' },
-  { key: 'assignments', label: 'Assignment Submission' },
-];
-
-const testimonials = [
-  {
-    quote: 'Roll call used to eat the first ten minutes of every lecture. Now it takes ten seconds.',
-    name: 'Priya S.',
-    role: 'Assistant Professor, Computer Science',
-  },
-  {
-    quote: 'End-of-semester attendance reports used to take me a full afternoon. Now it is one export.',
-    name: 'Rahul M.',
-    role: 'Department Admin',
-  },
-  {
-    quote: 'I scan to check in and submit assignments from the same portal. Everything is in one place.',
-    name: 'Ananya K.',
-    role: 'Final-year Student',
-  },
-];
-
-const securityPoints = [
-  {
-    title: 'Encrypted in transit',
-    desc: 'All data between the app and our servers travels over HTTPS/TLS, the same standard banks use.',
-  },
-  {
-    title: 'Role-based access',
-    desc: 'Students only see their own records. Faculty only see their batches. Admins control who sees what.',
-  },
-  {
-    title: 'We never sell your data',
-    desc: 'Attendance and student records are never shared with or sold to third parties, ever.',
-  },
-  {
-    title: 'You own your data',
-    desc: 'Export everything to Excel/PDF anytime, and request full deletion if you ever choose to leave.',
-  },
-];
-
-const screenshots = [
-  {
-    src: '/screenshots/qr-scan.png',
-    alt: 'Student scanning QR code to mark attendance',
-    caption: 'Scan to check in',
-  },
-  {
-    src: '/screenshots/admin-dashboard.png',
-    alt: 'Admin dashboard showing batches and attendance overview',
-    caption: 'Admin dashboard',
-  },
-  {
-    src: '/screenshots/report-export.png',
-    alt: 'Attendance report being exported to Excel and PDF',
-    caption: 'One-click report export',
-  },
-];
-
-const faqs = [
-  {
-    q: 'Does it work without internet?',
-    a: 'Students need a brief internet connection only at the moment of scanning to log attendance. If connectivity drops mid-class, faculty can still mark attendance manually and it syncs once the connection is back.',
-  },
-  {
-    q: "What if a student doesn't have a smartphone?",
-    a: 'Faculty can mark that student present or absent manually from their portal — the QR flow is a convenience, not a requirement, so no one is excluded from the attendance record.',
-  },
-  {
-    q: 'Is our data secure?',
-    a: 'Yes. All traffic is encrypted in transit, access is role-based by Admin/Faculty/Student, and we never sell or share student data with third parties. See the "Your data stays yours" section above for details.',
-  },
-  {
-    q: 'Can we cancel anytime?',
-    a: 'Yes, there is no lock-in contract. You can cancel your plan anytime, and you can export all your attendance, report, and assignment data before you go.',
-  },
-];
-
-function Check() {
-  return <span className="text-forestDark font-600">✓</span>;
+function UserIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+    </svg>
+  );
 }
-function Dash() {
-  return <span className="text-ink/30">—</span>;
+function LockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
 }
 
-export default function Landing() {
-  const { admin } = useAuth();
-  const [showContact, setShowContact] = useState(false);
-  const [openFaq, setOpenFaq] = useState(null);
-  if (admin) return <Navigate to="/dashboard" replace />;
+const inputClass =
+  'w-full rounded-full text-[#1E2A26] placeholder-[#1E2A26]/40 text-sm pl-10 pr-4 py-2.5 outline-none border focus:ring-2 focus:ring-[#2F6F4F]';
+const inputStyle = { background: PAPER, borderColor: RULE };
+
+export default function Login() {
+  const adminAuth = useAuth();
+  const facultyAuth = useFacultyAuth();
+  const studentAuth = useStudentAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const initialRole = TABS.includes(searchParams.get('role')) ? searchParams.get('role') : 'admin';
+  const [role, setRole] = useState(initialRole);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const cfg = ROLES[role];
+
+  function switchRole(next) {
+    if (next === role) return;
+    setRole(next);
+    setIdentifier('');
+    setPassword('');
+    setError('');
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    if (!identifier.trim() || !password) {
+      setError(`${cfg.idLabel} and password are required.`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const csrfToken = await getCsrfToken();
+      const id = identifier.trim();
+      if (role === 'admin') await adminAuth.login(id, password, csrfToken);
+      else if (role === 'faculty') await facultyAuth.login(id, password, csrfToken);
+      else await studentAuth.login(id, password, csrfToken);
+      navigate(cfg.redirect);
+    } catch (err) {
+      setError(err.message || 'Invalid credentials.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-transparent">
-      {/* ---- Nav bar ---- */}
-      <header className="border-b border-rule bg-card sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Logo iconSize={32} textSize="text-base" showSubtitle={false} />
-          <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((l) => (
-              
-               <a key={l.label}
-                href={l.href}
-                className="text-sm font-medium text-ink/70 hover:text-ink transition-colors"
-              >
-                {l.label}
-              </a>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowContact(true)}
-              className="glass-btn px-4 py-1.5 text-sm font-medium rounded border border-rule text-ink/70 hover:text-ink transition-colors"
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-10"
+      style={{ background: 'linear-gradient(135deg,#8FD3E8 0%,#4A9CB8 40%,#1F5C73 100%)' }}
+    >
+      <div
+        className="w-full max-w-4xl flex flex-col md:flex-row shadow-2xl overflow-hidden rounded-lg md:min-h-[400px]"
+        style={{ background: CARD }}
+      >
+        {/* ---------- Left: welcome panel ---------- */}
+        <div
+          className="hidden md:block relative w-1/2 overflow-hidden"
+          style={{ background: `linear-gradient(160deg,#3A8DA8 0%,${FOREST} 40%,${FOREST_DARK} 100%)` }}
+        >
+          <div
+            className="absolute rounded-full"
+            style={{ top: '18%', right: '-4%', width: 150, height: 150, background: 'rgba(143,211,232,0.25)' }}
+          />
+          <div className="relative z-10 px-10 pt-24">
+            <div className="mb-4"><LogoMark size={40} /></div>
+            <h1
+              className="font-display text-white text-4xl font-semibold leading-tight"
+              style={{ textShadow: 'none' }}
             >
-              Contact Us
-            </button>
-            <Link
-              to="/login"
-              className="glass-btn px-4 py-1.5 text-sm font-medium rounded border border-forest text-forestDark hover:bg-forestGlass hover:text-white transition-colors"
-            >
-              Login
-            </Link>
+              Welcome to Present Hoon Sir!
+            </h1>
+            <p className="text-white/90 text-sm mt-3 max-w-xs leading-relaxed">{cfg.blurb}</p>
           </div>
+          {PILLS.map((p, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                left: p.left,
+                bottom: p.bottom,
+                width: p.w,
+                height: p.h,
+                background: p.bg,
+                transform: `rotate(${p.rot}deg)`,
+                opacity: 0.95,
+              }}
+            />
+          ))}
         </div>
-      </header>
 
-      {/* ---- Hero / Overview ---- */}
-      <section id="overview" className="max-w-4xl mx-auto px-6 pt-20 pb-12 text-center">
-        <p className="font-mono text-xs tracking-widest uppercase text-brick mb-4">
-          Built for colleges &amp; universities
-        </p>
-        <h1 className="font-display text-4xl sm:text-5xl font-700 text-ink leading-tight mb-6">
-          One platform for attendance,<br className="hidden sm:block" /> reports, updates & assignments.
-        </h1>
-        <p className="text-lg text-ink/70 max-w-2xl mx-auto mb-10">
-          Present Hoon Sir! (PHS-AMS) replaces manual roll calls and scattered spreadsheets with a
-          single system — QR attendance, Excel/PDF reports, automated email & SMS updates, separate
-          Admin/Faculty/Student portals, and assignment submission, all in one place.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
-          <Link
-            to="/login"
-            className="px-6 py-3 glass-btn bg-forestGlass text-white rounded font-medium hover:bg-forestGlass/70 transition-colors"
+        {/* ---------- Right: tabs + form ---------- */}
+        <div className="w-full md:w-1/2 px-6 sm:px-10 py-10 flex flex-col justify-center" style={{ background: CARD }}>
+          <div className="md:hidden flex items-center justify-center gap-2 mb-5">
+            <LogoMark size={32} />
+            <span className="font-display font-semibold" style={{ color: FOREST_DARK }}>Present Hoon Sir!</span>
+          </div>
+
+          {/* Tabs */}
+          <div
+            role="tablist"
+            aria-label="Login type"
+            className="flex rounded-full p-1 max-w-xs w-full mx-auto border"
+            style={{ background: PAPER, borderColor: RULE }}
           >
-            Get Started
-          </Link>
-          <button
-            type="button"
-            onClick={() => setShowContact(true)}
-            className="px-6 py-3 glass-btn border border-forest rounded font-medium text-forestDark hover:bg-forestGlass hover:text-white transition-colors"
-          >
-            Book a Demo
-          </button>
-          
-            <a href="#how-it-works"
-            className="px-6 py-3 rounded font-medium text-ink/70 hover:text-ink transition-colors"
-          >
-            See how it works
-          </a>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {['QR Attendance', 'Excel & PDF Reports', 'Email & SMS Updates', 'Separate Portals', 'Assignment Submission'].map(
-            (chip) => (
-              <span key={chip}
-                className="font-mono text-xs px-3 py-1.5 rounded-full border border-rule bg-card text-ink/70"
-              >
-                {chip}
-              </span>
-            )
-          )}
-        </div>
-      </section>
-
-      {/* ---- How it works ---- */}
-      <section id="how-it-works" className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          From empty classroom to logged, reported & updated
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">three steps, zero guesswork</p>
-        <div className="grid sm:grid-cols-3 gap-6">
-          {steps.map((s) => (
-            <div key={s.n} className="bg-card border border-rule rounded-lg p-6">
-              <p className="font-mono text-xs text-brick tracking-widest mb-3">STEP {s.n}</p>
-              <h3 className="font-display text-lg font-600 text-forestDark mb-2">{s.title}</h3>
-              <p className="text-sm text-ink/70 leading-relaxed">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Features ---- */}
-      <section id="features" className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          Everything your institution needs
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">
-          five core features, built for higher education
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coreFeatures.map((f) => (
-            <div key={f.title} className="bg-card border border-rule rounded-lg p-6">
-              <p className="font-mono text-xs text-brick tracking-widest mb-3">{f.tag}</p>
-              <h3 className="font-display text-lg font-600 text-forestDark mb-2">{f.title}</h3>
-              <p className="text-sm text-ink/70 leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Screenshots ---- */}
-      <section className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          See it in action
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">
-          a quick look at the actual product
-        </p>
-        <div className="grid sm:grid-cols-3 gap-6">
-          {screenshots.map((s) => (
-            <div key={s.src} className="bg-card border border-rule rounded-lg overflow-hidden">
-              <img src={s.src} alt={s.alt} className="w-full h-48 object-cover object-top" />
-              <p className="font-mono text-xs text-ink/60 text-center py-3">{s.caption}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Audience ---- */}
-      <section className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-12">
-          Made for higher education
-        </h2>
-        <div className="grid sm:grid-cols-3 gap-6">
-          {audience.map((a) => (
-            <div key={a.title} className="text-center px-4">
-              <h3 className="font-display text-lg font-600 text-forestDark mb-2">{a.title}</h3>
-              <p className="text-sm text-ink/70 leading-relaxed">{a.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Security / Data Privacy ---- */}
-      <section className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          Your data stays yours
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">
-          built with student data privacy as a first-class concern
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {securityPoints.map((s) => (
-            <div key={s.title} className="bg-card border border-rule rounded-lg p-6">
-              <h3 className="font-display text-base font-600 text-forestDark mb-2">{s.title}</h3>
-              <p className="text-sm text-ink/70 leading-relaxed">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- Pricing ---- */}
-      <section id="pricing" className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          Simple, transparent pricing
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">
-          choose the plan that fits your institution
-        </p>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[720px]">
-            <thead>
-              <tr>
-                <th className="text-left p-4 border border-rule bg-card font-display text-sm font-600 text-ink/70">
-                  Plan
-                </th>
-                {plans.map((p) => (
-                  <th
-                    key={p.name}
-                    className={`p-4 border border-rule text-center font-display ${
-                      p.highlight ? 'bg-forestGlass text-white' : 'bg-card text-ink'
-                    }`}
-                  >
-                    <div className="text-base font-600">{p.name}</div>
-                    <div className={`text-2xl font-700 mt-1 ${p.highlight ? 'text-white' : 'text-forestDark'}`}>
-                      ₹{p.price.toLocaleString('en-IN')}
-                    </div>
-                    <div className={`font-mono text-[11px] mt-1 ${p.highlight ? 'text-white/70' : 'text-ink/50'}`}>
-                      per month
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {pricingRows.map((row, i) => (
-                <tr key={row.key} className={i % 2 === 0 ? 'bg-card' : 'bg-transparent'}>
-                  <td className="p-4 border border-rule text-sm font-medium text-ink/80">{row.label}</td>
-                  {plans.map((p) => (
-                    <td key={p.name + row.key} className="p-4 border border-rule text-center">
-                      {p.features[row.key] ? <Check /> : <Dash />}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              <tr>
-                <td className="p-4 border border-rule"></td>
-                {plans.map((p) => (
-                  <td key={p.name + '-cta'} className="p-4 border border-rule text-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowContact(true)}
-                      className={`inline-block px-4 py-2 rounded text-sm font-medium glass-btn transition-colors ${
-                        p.highlight
-                          ? 'bg-forestGlass text-white hover:bg-forestGlass/70'
-                          : 'border border-forest text-forestDark hover:bg-forestGlass hover:text-white'
-                      }`}
-                    >
-                      Choose {p.name}
-                    </button>
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* ---- Testimonials ---- */}
-      <section className="max-w-6xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          What faculty and students say
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">
-          real feedback from PHS-AMS classrooms
-        </p>
-        <div className="grid sm:grid-cols-3 gap-6">
-          {testimonials.map((t) => (
-            <div key={t.name} className="bg-card border border-rule rounded-lg p-6 flex flex-col">
-              <p className="text-sm text-ink/80 leading-relaxed italic mb-4">&ldquo;{t.quote}&rdquo;</p>
-              <div className="mt-auto pt-4 border-t border-rule">
-                <p className="font-display text-sm font-600 text-ink">{t.name}</p>
-                <p className="font-mono text-xs text-ink/60">{t.role}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---- FAQ ---- */}
-      <section className="max-w-3xl mx-auto px-6 py-16 border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink text-center mb-2">
-          Frequently asked questions
-        </h2>
-        <p className="text-center text-ink/60 mb-12 font-mono text-sm">
-          still deciding? here&apos;s what most admins ask first
-        </p>
-        <div className="space-y-3">
-          {faqs.map((f, i) => {
-            const isOpen = openFaq === i;
-            return (
-              <div key={f.q} className="bg-card border border-rule rounded-lg overflow-hidden">
+            {TABS.map((key) => {
+              const active = key === role;
+              return (
                 <button
+                  key={key}
                   type="button"
-                  onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => switchRole(key)}
+                  className={`flex-1 rounded-full py-1.5 text-xs font-semibold tracking-wide transition-all ${
+                    active ? 'text-white shadow' : 'hover:bg-white/60'
+                  }`}
+                  style={active ? { background: BTN_BG } : { color: FOREST_DARK }}
                 >
-                  <span className="font-display text-base font-600 text-ink">{f.q}</span>
-                  <span className="text-forestDark text-lg leading-none shrink-0">
-                    {isOpen ? '−' : '+'}
-                  </span>
+                  {ROLES[key].label}
                 </button>
-                {isOpen && (
-                  <div className="px-6 pb-4">
-                    <p className="text-sm text-ink/70 leading-relaxed">{f.a}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
 
-      {/* ---- Final CTA ---- */}
-      <section className="max-w-4xl mx-auto px-6 py-20 text-center border-t border-rule">
-        <h2 className="font-display text-3xl font-600 text-ink mb-4">
-          Ready to digitize your institution?
-        </h2>
-        <p className="text-ink/70 mb-8">
-          Sign in as an admin to create your first batch and generate a QR code.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Link
-            to="/login"
-            className="inline-block px-6 py-3 glass-btn bg-forestGlass text-white rounded font-medium hover:bg-forestGlass/70 transition-colors"
+          <h2
+            className="font-display text-center font-semibold tracking-wide text-lg mt-7 mb-5"
+            style={{ color: FOREST_DARK, textShadow: 'none' }}
           >
-            Login
-          </Link>
-          <button
-            type="button"
-            onClick={() => setShowContact(true)}
-            className="inline-block px-6 py-3 glass-btn border border-forest rounded font-medium text-forestDark hover:bg-forestGlass hover:text-white transition-colors"
-          >
-            Book a Demo
-          </button>
-        </div>
-      </section>
+            {cfg.title}
+          </h2>
 
-      <Footer />
-      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
+          <form onSubmit={handleSubmit} className="w-full max-w-[280px] mx-auto space-y-3.5">
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: FOREST }}><UserIcon /></span>
+              <input
+                key={role}
+                type={cfg.idType}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder={cfg.idPlaceholder}
+                aria-label={cfg.idLabel}
+                autoFocus
+                autoComplete="username"
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: FOREST }}><LockIcon /></span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                aria-label="Password"
+                autoComplete="current-password"
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
+
+            {error && (
+              <p className="text-xs font-medium text-center" style={{ color: BRICK }} role="alert">{error}</p>
+            )}
+
+            <div className="flex justify-center pt-2">
+              <button
+                type="submit"
+                disabled={busy}
+                className="rounded-full text-white text-xs font-semibold tracking-wider px-12 py-2.5 shadow-md hover:opacity-90 transition-opacity disabled:opacity-60"
+                style={{ background: BTN_BG }}
+              >
+                {busy ? 'SIGNING IN…' : 'LOGIN'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <Link to="/" className="mt-6 text-sm text-white/90 hover:text-white underline underline-offset-4">
+        ← Back to home
+      </Link>
     </div>
   );
 }
