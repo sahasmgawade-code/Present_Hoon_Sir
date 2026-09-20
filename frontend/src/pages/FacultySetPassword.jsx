@@ -39,7 +39,7 @@ export default function FacultySetPassword() {
     try {
       await api.setFacultyPassword(token, password);
       setDone(true);
-      setTimeout(() => navigate('/faculty/login'), 2000);
+      setTimeout(() => navigate('/login?role=faculty'), 2000);
     } catch (err) {
       setError(err.message || 'Could not set password.');
     } finally {
@@ -61,7 +61,7 @@ export default function FacultySetPassword() {
             ) : !tokenValid ? (
               <div className="text-center space-y-3">
                 <p className="text-sm text-brick font-medium">{tokenError}</p>
-                <Link to="/faculty/login" className="text-sm text-forest underline">
+                <Link to="/login?role=faculty" className="text-sm text-forest underline">
                   Back to login
                 </Link>
               </div>

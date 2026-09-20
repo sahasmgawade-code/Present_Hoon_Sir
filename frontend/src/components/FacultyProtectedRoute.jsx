@@ -3,6 +3,6 @@ import { Navigate } from 'react-router-dom';
 import { useFacultyAuth } from '../context/FacultyAuthContext.jsx';
 export default function FacultyProtectedRoute({ children }) {
   const { faculty } = useFacultyAuth();
-  if (!faculty) return <Navigate to="/faculty/login" replace />;
+  if (!faculty) return <Navigate to="/login?role=faculty" replace />;
   return children;
 }

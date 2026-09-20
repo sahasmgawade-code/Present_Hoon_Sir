@@ -529,7 +529,7 @@ export default function Landing() {
             to="/login"
             className="inline-block px-6 py-3 glass-btn bg-forestGlass text-white rounded font-medium hover:bg-forestGlass/70 transition-colors"
           >
-            Admin Login
+            Login
           </Link>
           <button
             type="button"
