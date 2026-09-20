@@ -66,23 +66,12 @@ const TABS = ['admin', 'faculty', 'student'];
 const FOREST = '#2F6F4F';
 const FOREST_DARK = '#234F38';
 const BRICK = '#A6432F';
-const AMBER = '#B8842E';
 const PAPER = '#EFEEE6';
 const CARD = '#F8F7F1';
 const RULE = '#C9CABB';
 
 const BTN_BG = `linear-gradient(90deg, ${FOREST}, ${FOREST_DARK})`;
 const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
-
-const PILLS = [
-  { left: '-4%', bottom: '-6%', w: 190, h: 64, rot: -55, bg: `linear-gradient(90deg,${AMBER},#D9A552)` },
-  { left: '14%', bottom: '2%', w: 230, h: 70, rot: -55, bg: `linear-gradient(90deg,#D9A552,${BRICK})` },
-  { left: '40%', bottom: '-4%', w: 210, h: 66, rot: -55, bg: `linear-gradient(90deg,${AMBER},${BRICK})` },
-  { left: '58%', bottom: '10%', w: 190, h: 58, rot: -55, bg: 'linear-gradient(90deg,#3A8DA8,#8FD3E8)' },
-  { left: '2%', bottom: '28%', w: 120, h: 8, rot: -55, bg: 'rgba(217,165,82,0.85)' },
-  { left: '30%', bottom: '38%', w: 150, h: 8, rot: -55, bg: 'rgba(143,211,232,0.75)' },
-  { left: '52%', bottom: '32%', w: 110, h: 8, rot: -55, bg: 'rgba(217,165,82,0.75)' },
-];
 
 function UserIcon() {
   return (
@@ -106,6 +95,111 @@ function CheckIcon() {
       <path d="M5 12l5 5L20 7" />
     </svg>
   );
+}
+
+/* ---------------- Avatars ---------------- */
+function AvatarChip({ children }) {
+  return (
+    <g transform="translate(158 40)">
+      <circle r="19" fill="#F8F7F1" />
+      <g fill="#2F6F4F">{children}</g>
+    </g>
+  );
+}
+
+function AdminAvatar() {
+  return (
+    <svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true">
+      <defs><clipPath id="phsClipAdmin"><circle cx="100" cy="100" r="92" /></clipPath></defs>
+      <circle cx="100" cy="100" r="92" fill="rgba(255,255,255,0.18)" />
+      <g clipPath="url(#phsClipAdmin)">
+        <path d="M20 200 C22 150 60 132 100 132 C140 132 178 150 180 200 Z" fill="#1E2A26" />
+        <path d="M84 134 L100 170 L116 134 Z" fill="#F8F7F1" />
+        <path d="M84 134 L100 170 L70 152 Z" fill="#2C3D37" />
+        <path d="M116 134 L100 170 L130 152 Z" fill="#2C3D37" />
+        <path d="M96 150 L104 150 L107 182 L100 192 L93 182 Z" fill="#A6432F" />
+        <rect x="88" y="112" width="24" height="26" rx="8" fill="#C98F6B" />
+        <ellipse cx="68.5" cy="94" rx="4.5" ry="7" fill="#D9A07C" />
+        <ellipse cx="131.5" cy="94" rx="4.5" ry="7" fill="#D9A07C" />
+        <ellipse cx="100" cy="90" rx="30" ry="34" fill="#D9A07C" />
+        <path d="M68 86 C66 56 88 50 102 52 C124 52 136 66 132 88 C126 74 116 68 100 68 C84 68 74 74 68 86 Z" fill="#2B211C" />
+        <circle cx="89" cy="92" r="2.8" fill="#1E2A26" />
+        <circle cx="111" cy="92" r="2.8" fill="#1E2A26" />
+        <path d="M91 106 Q100 113 109 106" fill="none" stroke="#1E2A26" strokeWidth="2.4" strokeLinecap="round" />
+      </g>
+      <AvatarChip>
+        <path d="M0 -10 L9 -6 V1 C9 6 5 10 0 12 C-5 10 -9 6 -9 1 V-6 Z" />
+      </AvatarChip>
+    </svg>
+  );
+}
+
+function FacultyAvatar() {
+  return (
+    <svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true">
+      <defs><clipPath id="phsClipFaculty"><circle cx="100" cy="100" r="92" /></clipPath></defs>
+      <circle cx="100" cy="100" r="92" fill="rgba(255,255,255,0.18)" />
+      <g clipPath="url(#phsClipFaculty)">
+        <ellipse cx="100" cy="90" rx="37" ry="40" fill="#4A2E22" />
+        <circle cx="100" cy="48" r="15" fill="#4A2E22" />
+        <path d="M18 200 C20 152 58 134 100 134 C142 134 182 152 182 200 Z" fill="#2F6F4F" />
+        <path d="M82 136 L100 172 L118 136 Z" fill="#F8F7F1" />
+        <path d="M82 136 L100 172 L66 156 Z" fill="#234F38" />
+        <path d="M118 136 L100 172 L134 156 Z" fill="#234F38" />
+        <circle cx="128" cy="160" r="4" fill="#B8842E" />
+        <rect x="88" y="114" width="24" height="26" rx="8" fill="#E8B792" />
+        <ellipse cx="100" cy="92" rx="30" ry="34" fill="#E8B792" />
+        <path d="M69 86 C68 60 88 54 102 56 C122 56 134 68 131 88 C120 80 108 70 96 68 C86 72 74 78 69 86 Z" fill="#4A2E22" />
+        <circle cx="89" cy="93" r="2.8" fill="#1E2A26" />
+        <circle cx="111" cy="93" r="2.8" fill="#1E2A26" />
+        <circle cx="89" cy="93" r="9.5" fill="none" stroke="#1E2A26" strokeWidth="2.2" />
+        <circle cx="111" cy="93" r="9.5" fill="none" stroke="#1E2A26" strokeWidth="2.2" />
+        <path d="M98.5 93 H101.5" stroke="#1E2A26" strokeWidth="2.2" />
+        <path d="M91 108 Q100 115 109 108" fill="none" stroke="#A6432F" strokeWidth="2.4" strokeLinecap="round" />
+      </g>
+      <AvatarChip>
+        <path d="M-10 -6 Q-5 -8 0 -5 V8 Q-5 5 -10 7 Z" />
+        <path d="M10 -6 Q5 -8 0 -5 V8 Q5 5 10 7 Z" />
+      </AvatarChip>
+    </svg>
+  );
+}
+
+function StudentAvatar() {
+  return (
+    <svg viewBox="0 0 200 200" width="100%" height="100%" aria-hidden="true">
+      <defs><clipPath id="phsClipStudent"><circle cx="100" cy="100" r="92" /></clipPath></defs>
+      <circle cx="100" cy="100" r="92" fill="rgba(255,255,255,0.18)" />
+      <g clipPath="url(#phsClipStudent)">
+        <path d="M16 200 C18 150 56 132 100 132 C144 132 184 150 184 200 Z" fill="#B8842E" />
+        <path d="M50 146 L56 200 M150 146 L144 200" stroke="#234F38" strokeWidth="11" strokeLinecap="round" />
+        <path d="M76 134 C82 152 118 152 124 134 C118 126 82 126 76 134 Z" fill="#8C6423" />
+        <path d="M92 148 V168 M108 148 V168" stroke="#F8F7F1" strokeWidth="3" strokeLinecap="round" />
+        <rect x="88" y="112" width="24" height="26" rx="8" fill="#B07A56" />
+        <ellipse cx="69" cy="94" rx="4.5" ry="7" fill="#C98F6B" />
+        <ellipse cx="131" cy="94" rx="4.5" ry="7" fill="#C98F6B" />
+        <ellipse cx="100" cy="90" rx="30" ry="34" fill="#C98F6B" />
+        <path d="M68 84 C66 56 86 46 102 48 C124 48 136 62 132 86 C126 72 120 64 100 62 C84 62 74 70 68 84 Z" fill="#3A2A20" />
+        <circle cx="89" cy="92" r="2.8" fill="#1E2A26" />
+        <circle cx="111" cy="92" r="2.8" fill="#1E2A26" />
+        <path d="M90 104 Q100 117 110 104 Z" fill="#F8F7F1" stroke="#1E2A26" strokeWidth="2" strokeLinejoin="round" />
+      </g>
+      <AvatarChip>
+        <path d="M0 -8 L12 -2 L0 4 L-12 -2 Z" />
+        <path d="M-6 1 V7 Q0 10 6 7 V1 L0 4 Z" />
+      </AvatarChip>
+    </svg>
+  );
+}
+
+const AVATARS = { admin: AdminAvatar, faculty: FacultyAvatar, student: StudentAvatar };
+
+function avatarStyle(active) {
+  return {
+    opacity: active ? 1 : 0,
+    transform: active ? 'translateY(0) scale(1)' : 'translateY(18px) scale(0.88)',
+    transition: `opacity 600ms ${EASE} ${active ? 150 : 0}ms, transform 600ms ${EASE} ${active ? 150 : 0}ms`,
+  };
 }
 
 // Fade + slide for the left-panel text. Staggered when a slide becomes active.
@@ -179,14 +273,19 @@ export default function Login() {
           to   { opacity: 1; transform: translateY(0); }
         }
         .phs-fade-up { animation: phsFadeUp 450ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+        @keyframes phsFloat {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-6px); }
+        }
+        .phs-float { animation: phsFloat 4s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .phs-fade-up { animation: none; }
+          .phs-fade-up, .phs-float { animation: none; }
           .phs-anim, .phs-anim * { transition: none !important; }
         }
       `}</style>
 
       <div
-        className="w-full max-w-4xl flex flex-col md:flex-row shadow-2xl overflow-hidden rounded-lg md:min-h-[420px]"
+        className="w-full max-w-4xl flex flex-col md:flex-row shadow-2xl overflow-hidden rounded-lg md:min-h-[600px]"
         style={{ background: CARD }}
       >
         {/* ---------- Left: welcome panel ---------- */}
@@ -204,15 +303,10 @@ export default function Login() {
             />
           ))}
 
-          <div
-            className="absolute rounded-full"
-            style={{ top: '14%', right: '-4%', width: 150, height: 150, background: 'rgba(143,211,232,0.25)' }}
-          />
-
           {/* Text slides (stacked, cross-fading) */}
           <div className="relative z-10 px-10 pt-16">
             <div className="mb-4"><LogoMark size={40} /></div>
-            <div className="relative" style={{ height: 250 }}>
+            <div className="relative" style={{ height: 280 }}>
               {TABS.map((key) => {
                 const r = ROLES[key];
                 const active = key === role;
@@ -264,21 +358,20 @@ export default function Login() {
             </div>
           </div>
 
-          {PILLS.map((p, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full"
-              style={{
-                left: p.left,
-                bottom: p.bottom,
-                width: p.w,
-                height: p.h,
-                background: p.bg,
-                transform: `rotate(${p.rot}deg)`,
-                opacity: 0.95,
-              }}
-            />
-          ))}
+          {/* Avatars (cross-fade per role) */}
+          <div
+            className="phs-float absolute left-1/2 bottom-6"
+            style={{ width: 160, height: 160, marginLeft: -80 }}
+          >
+            {TABS.map((key) => {
+              const Avatar = AVATARS[key];
+              return (
+                <div key={key} className="absolute inset-0" style={avatarStyle(key === role)}>
+                  <Avatar />
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* ---------- Right: tabs + form ---------- */}
