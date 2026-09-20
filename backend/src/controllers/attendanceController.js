@@ -99,12 +99,23 @@ async function saveAttendanceForDate(req, res) {
     if (!(await canActorAccessBatch(req.actor, batchId))) {
       return res.status(403).json({ error: 'No access to this batch' });
     }
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+      return res.status(400).json({ error: 'date must be YYYY-MM-DD' });
+    }
+    const batchStudents = await pool.query('SELECT id FROM students WHERE batch_id = $1', [batchId]);
+    const validIds = new Set(batchStudents.rows.map((s) => s.id));
+    const allValid = records.every(
+      (r) => r && Number.isInteger(r.studentId) && validIds.has(r.studentId) && ['present', 'absent'].includes(r.status)
+    );
+    if (!allValid) {
+      return res.status(400).json({ error: 'Records contain a student outside this batch or an invalid status' });
+    }
     const existing = await pool.query(
       'SELECT student_id, status FROM attendance WHERE batch_id = $1 AND date = $2',
       [batchId, date]
     );
     const prevStatus = new Map(existing.rows.map((r) => [r.student_id, r.status]));
-    const client = await pool.connect();
+    const client = await pool.pool.connect();
     try {
       await client.query('BEGIN');
       for (const r of records) {

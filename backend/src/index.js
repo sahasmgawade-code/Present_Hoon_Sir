@@ -3,14 +3,15 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
 
 const app = express();
 app.set('trust proxy', 1);
+app.use(require('helmet')());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-const corsOptions = {
+app.use(cookieParser());const corsOptions = {
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -20,10 +21,10 @@ app.use(cors(corsOptions));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 600,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many requests, please try again later.' }
+  message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api', limiter);
 
@@ -50,21 +51,14 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
 app.use('/api/student-auth', require('./routes/studentAuthRoutes'));
 app.use('/api/attendance', require('./routes/attendanceRoutes'));
-
-app.use((req, res, next) => {
-  res.status(404).json({ message: `Cannot ${req.method} ${req.originalUrl}` });
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
 });
 
 app.use((err, req, res, next) => {
   console.error('Unhandled Error:', err.stack || err);
-  const statusCode = err.status || err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  res.status(statusCode).json({
-    error: {
-      message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    }
-  });
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({ error: status >= 500 ? 'Internal Server Error' : 'Bad request' });
 });
 
 const PORT = process.env.PORT || 5000;

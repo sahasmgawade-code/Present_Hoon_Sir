@@ -115,7 +115,7 @@ async function getAdminBatchAccess(req, res) {
 async function updateAdmin(req, res) {
   const { id } = req.params;
   const { name } = req.body;
-  if (!name || !name.trim()) {
+  if (typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'Name is required' });
   }
   try {

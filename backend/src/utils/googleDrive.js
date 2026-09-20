@@ -13,7 +13,7 @@ async function getOrCreateBatchFolder(batchId, batchName) {
   const rootId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
   const folderName = `Batch ${batchId} - ${batchName}`;
   const existing = await drive.files.list({
-    q: `'${rootId}' in parents and name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    q: `'${rootId}' in parents and name = '${folderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id, name)',
   });
   if (existing.data.files && existing.data.files.length > 0) {
@@ -58,7 +58,7 @@ async function getOrCreateSubmissionsFolder(batchId, batchName, assignmentId, as
   const batchFolderId = await getOrCreateBatchFolder(batchId, batchName);
   const folderName = `${assignmentTitle} - Submissions`;
   const existing = await drive.files.list({
-    q: `'${batchFolderId}' in parents and name = '${folderName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    q: `'${batchFolderId}' in parents and name = '${folderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
     fields: 'files(id, name)',
   });
   if (existing.data.files && existing.data.files.length > 0) {

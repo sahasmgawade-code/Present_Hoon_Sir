@@ -18,7 +18,7 @@ if (!plainPassword) {
       [name, email, hash]
     );
     console.log('Super Admin created:', result.rows[0]);
-    console.log('Login with email:', email, '| password:', plainPassword);
+    console.log('Login with email:', email);
   } catch (err) {
     console.error('Failed:', err.message);
   } finally {

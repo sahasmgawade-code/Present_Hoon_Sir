@@ -247,10 +247,10 @@ async function setBlacklist(req, res) {
 async function setStudentCredentials(req, res) {
   const { studentId } = req.params;
   const { loginId, password } = req.body;
-  if (!loginId || !loginId.trim()) {
+  if (typeof loginId !== 'string' || !loginId.trim()) {
     return res.status(400).json({ error: 'loginId is required' });
   }
-  if (!password || password.length < 6) {
+  if (!password || password.length < 8) {
     return res.status(400).json({ error: 'password must be at least 6 characters' });
   }
   try {

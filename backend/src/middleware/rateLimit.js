@@ -1,11 +1,13 @@
 const rateLimit = require('express-rate-limit');
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 8,                   // 8 attempts per IP per window, per login route
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many login attempts. Please wait a few minutes and try again.' },
-});
+const make = (windowMs, max, error) =>
+  rateLimit({ windowMs, max, standardHeaders: true, legacyHeaders: false, message: { error } });
 
-module.exports = { loginLimiter };
+const loginMsg = 'Too many login attempts. Please wait a few minutes and try again.';
+const adminLoginLimiter   = make(15 * 60 * 1000, 8, loginMsg);
+const facultyLoginLimiter = make(15 * 60 * 1000, 8, loginMsg);
+const studentLoginLimiter = make(15 * 60 * 1000, 30, loginMsg); // classrooms share one Wi-Fi IP
+const contactLimiter      = make(60 * 60 * 1000, 5, 'Too many messages sent. Please try again later.');
+const qrSubmitLimiter     = make(10 * 60 * 1000, 200, 'Too many attempts. Please wait a few minutes.');
+
+module.exports = { adminLoginLimiter, facultyLoginLimiter, studentLoginLimiter, contactLimiter, qrSubmitLimiter };

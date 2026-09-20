@@ -1,9 +1,17 @@
 const { sendEmail } = require('../utils/mailer');
 const { escapeHtml } = require('../utils/htmlEscape');
 async function submitContactForm(req, res) {
-  const { name, email, phone, organization, message } = req.body;
-  if (!name || !email || !phone) {
+  const { name, email, phone, organization, message } = req.body || {};
+  const isStr = (v) => typeof v === 'string';
+  if (![name, email, phone].every(isStr) || !name.trim() || !email.trim() || !phone.trim()) {
     return res.status(400).json({ error: 'Name, email, and phone are required' });
+  }
+  if ([organization, message].some((v) => v !== undefined && !isStr(v))) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+  if (name.length > 100 || email.length > 150 || phone.length > 25 ||
+      (organization || '').length > 200 || (message || '').length > 2000) {
+    return res.status(400).json({ error: 'Input too long' });
   }
   if (!/^[A-Za-z\s.'-]+$/.test(name.trim())) {
     return res.status(400).json({ error: 'Name should not contain numbers or special characters' });

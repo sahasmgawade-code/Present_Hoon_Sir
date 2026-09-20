@@ -4,8 +4,8 @@ const {studentLogin, getMyAttendance, getMyAssignments, submitAssignment, studen
 const { verifyStudentToken } = require('../middleware/auth');
 const { uploadSubmissionFile } = require('../middleware/upload');
 const { doubleCsrfProtection } = require('../middleware/csrf');
-const { loginLimiter } = require('../middleware/rateLimit');
-router.post('/login', loginLimiter, doubleCsrfProtection, studentLogin);
+const { studentLoginLimiter } = require('../middleware/rateLimit');
+router.post('/login', studentLoginLimiter, doubleCsrfProtection, studentLogin);
 router.post('/logout', studentLogout);
 router.get('/me', verifyStudentToken, getMyAttendance);
 router.get('/assignments', verifyStudentToken, getMyAssignments);

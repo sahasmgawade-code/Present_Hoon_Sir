@@ -45,11 +45,15 @@ async function getSessionStatus(req, res) {
 }
 async function submitAttendance(req, res) {
   const { token } = req.params;
-  const { firstName, lastName } = req.body;
+    const { firstName, lastName, urn: rawUrn } = req.body || {};
   const deviceToken = req.cookies.phsams_device_token;
-  const urn = (req.body.urn || '').replace(/\s+/g, '');
-  if (!urn || !firstName || !lastName || !deviceToken) {
-    return res.status(400).json({ error: 'urn, firstName, lastName are required, and this device could not be verified' });
+  const badInput = { error: 'urn, firstName, lastName are required, and this device could not be verified' };
+  if (![rawUrn, firstName, lastName].every((v) => typeof v === 'string') || !deviceToken) {
+    return res.status(400).json(badInput);
+  }
+  const urn = rawUrn.replace(/\s+/g, '');
+  if (!urn || !firstName.trim() || !lastName.trim() || urn.length > 50 || firstName.length > 100 || lastName.length > 100) {
+    return res.status(400).json(badInput);
   }
   try {
     const sessionRes = await pool.query('SELECT * FROM qr_sessions WHERE session_token = $1', [token]);
@@ -146,10 +150,11 @@ async function downloadSessionReport(req, res) {
       ORDER BY qs.submitted_at`,
       [sessionId]
     );
-    const escapeCsv = (val) => {
-      const str = String(val ?? '');
-      return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
-    };
+      const escapeCsv = (val) => {
+        let str = String(val ?? '');
+        if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+        return /[",\n\r]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+      };
     const header = ['URN', 'First Name', 'Last Name', 'Submitted At'];
     const rows = submissionsRes.rows.map((r) => [
       r.urn,
